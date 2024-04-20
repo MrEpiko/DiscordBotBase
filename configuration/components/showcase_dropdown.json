@@ -1,0 +1,50 @@
+{
+
+  "properties": {
+    "placeholder": "Here is a random dropdown",
+    "min_options": 0,
+    "max_options": 1,
+    "options": [
+      {
+        "name": "Apple",
+        "value": "Apple",
+        "description": "I choose to pick apple!",
+        "emoji": "🍎"
+      },
+      {
+        "name": "Orange",
+        "value": "Orange",
+        "description": "I choose to pick orange!",
+        "emoji": "🍊"
+      }
+    ],
+    "ephemeral_defer": true
+  },
+
+  "response": {
+    "message": "You've picked `{choice}`, that's interesting. However, I liked your previous choice more: `{previous_fruit}`.\n\nDown below is the same dropdown but with different appearance. *How amazing right?*",
+    "components": [
+      {
+        "name": "showcase_dropdown",
+        "placeholder": "Here is a random dropdown, again",
+        "min_options": 0,
+        "max_options": 1,
+        "options": [
+          {
+            "name": "Banana",
+            "value": "Banana",
+            "description": "I choose to pick banana!",
+            "emoji": "🍌"
+          },
+          {
+            "name": "Pineapple",
+            "value": "Pineapple",
+            "description": "I choose to pick pineapple!",
+            "emoji": "🍍"
+          }
+        ]
+      }
+    ]
+  }
+
+}

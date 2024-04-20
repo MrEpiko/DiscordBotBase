@@ -1,0 +1,79 @@
+{
+
+  "token": "",
+  "status": "ONLINE",
+  "admins": [],
+  "intents": [],
+
+  "default": {
+    "name": "",
+    "color": "",
+    "icon_url": "",
+    "developer_channel_id": "",
+    "developer_guild_id": "",
+    "time_format": "",
+    "date_format": "",
+    "truncation_indicator": "..."
+  },
+
+  "endpoints": {},
+  "auths": {},
+
+  "referenced_roles": {},
+
+  "modules": {
+    "showcase_task": true,
+    "showcase_listener": true
+  },
+
+  "databases": [
+    {
+      "id": "default",
+      "host": "",
+      "database": "",
+      "user": "",
+      "password": "",
+      "port": ""
+    }
+  ],
+
+  "error_handlers": {
+    "commands": {
+      "cooldown": {
+        "message": "Command is on cooldown, try again in {cooldown_time_left} seconds."
+      },
+      "reserved_for_role": {
+        "message": "You are not allowed to use this command."
+      },
+      "reserved_for_user": {
+        "message": "You are not allowed to use this command."
+      },
+      "reserved_for_channel": {
+        "message": "This command cannot be used in this channel."
+      },
+      "reserved_for_admin": {
+        "message": "You must be an admin to use this."
+      },
+      "disabled": {}
+    },
+    "components": {
+      "cooldown": {
+        "message": "Component is on cooldown, try again in {cooldown_time_left} seconds."
+      },
+      "reserved_for_role": {
+        "message": "You are not allowed to use this component."
+      },
+      "reserved_for_user": {
+        "message": "You are not allowed to use this component."
+      },
+      "reserved_for_channel": {
+        "message": "This component cannot be used in this channel."
+      },
+      "reserved_for_admin": {
+        "message": "You must be an admin to use this."
+      },
+      "disabled": {}
+    }
+  }
+
+}

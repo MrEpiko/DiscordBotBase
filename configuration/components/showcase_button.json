@@ -1,0 +1,15 @@
+{
+
+  "properties": {
+    "label": "Showcase button",
+    "style": "PRIMARY",
+    "cooldown": 10,
+    "ephemeral_defer": true
+  },
+
+  "default_response": {
+    "modal": "showcase_modal"
+  }
+
+
+}
