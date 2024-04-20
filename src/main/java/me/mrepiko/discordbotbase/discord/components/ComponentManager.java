@@ -8,21 +8,24 @@ import me.mrepiko.discordbotbase.discord.components.general.ComponentHandler;
 import me.mrepiko.discordbotbase.discord.components.general.types.ButtonHandler;
 import me.mrepiko.discordbotbase.discord.components.general.types.DropdownHandler;
 import me.mrepiko.discordbotbase.discord.components.general.types.ModalHandler;
-import me.mrepiko.discordbotbase.discord.components.handlers.*;
+import me.mrepiko.discordbotbase.discord.components.handlers.ShowcaseButtonHandler;
+import me.mrepiko.discordbotbase.discord.components.handlers.ShowcaseDropdownHandler;
+import me.mrepiko.discordbotbase.discord.components.handlers.ShowcaseModalHandler;
 import me.mrepiko.discordbotbase.discord.context.interaction.ButtonContext;
 import me.mrepiko.discordbotbase.discord.context.interaction.DropdownContext;
 import me.mrepiko.discordbotbase.discord.context.interaction.ModalContext;
 import me.mrepiko.discordbotbase.discord.mics.PlaceholderMap;
 import me.mrepiko.discordbotbase.discord.mics.ResponseBuilder;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.components.ActionComponent;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
-import net.dv8tion.jda.api.interactions.components.ItemComponent;
 import net.dv8tion.jda.api.interactions.components.LayoutComponent;
 import net.dv8tion.jda.api.interactions.modals.Modal;
 import org.jetbrains.annotations.NotNull;
@@ -203,6 +206,15 @@ public class ComponentManager extends ListenerAdapter {
         }
         if (map.getCtx().getGuild() != null && map.getCtx().getChannel() != null && !componentHandler.getRequiredChannels().isEmpty() && !componentHandler.getRequiredChannels().contains(map.getCtx().getChannel().getId())) {
             ResponseBuilder.buildAndSend(map, errorHandlersObject.get("reserved_for_channel").getAsJsonObject());
+            return false;
+        }
+        Member member = map.getCtx().getMember();
+        if (member != null && !componentHandler.getRequiredPermissions().isEmpty() && !member.hasPermission(componentHandler.getRequiredPermissions())) {
+            ResponseBuilder.buildAndSend(map, componentHandler.getErrorHandlers().get("missing_permissions"));
+            return false;
+        }
+        if (member != null && map.getCtx().getChannel() != null && !componentHandler.getRequiredChannelPermissions().isEmpty() && !member.hasPermission((GuildMessageChannel) map.getCtx().getChannel(), componentHandler.getRequiredChannelPermissions())) {
+            ResponseBuilder.buildAndSend(map, componentHandler.getErrorHandlers().get("missing_channel_permissions"));
             return false;
         }
 

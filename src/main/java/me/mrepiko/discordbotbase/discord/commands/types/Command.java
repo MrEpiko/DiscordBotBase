@@ -5,8 +5,10 @@ import com.google.gson.JsonObject;
 import lombok.Getter;
 import lombok.Setter;
 import me.mrepiko.discordbotbase.common.config.Config;
+import me.mrepiko.discordbotbase.discord.DiscordBot;
 import me.mrepiko.discordbotbase.discord.context.interaction.CommandContext;
 import me.mrepiko.discordbotbase.discord.mics.Constants;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import org.jetbrains.annotations.Nullable;
@@ -30,6 +32,8 @@ public abstract class Command {
     private final List<String> requiredRoles = new ArrayList<>();
     private final List<String> requiredUsers = new ArrayList<>();
     private final List<String> requiredChannels = new ArrayList<>();
+    private final List<Permission> requiredPermissions = new ArrayList<>();
+    private final List<Permission> requiredChannelPermissions = new ArrayList<>();
     private final List<String> aliases = new ArrayList<>();
     private final List<OptionData> optionDataList = new ArrayList<>();
     private final List<String> guilds = new ArrayList<>();
@@ -44,6 +48,7 @@ public abstract class Command {
     private final List<Command> children = new ArrayList<>();
     @Setter @Nullable private Command parent;
     private final HashMap<String, List<net.dv8tion.jda.api.interactions.commands.Command.Choice>> autocompleteOptions = new HashMap<>();
+    private final HashMap<String, JsonObject> errorHandlers = new HashMap<>();
 
     private final HashMap<String, Long> cooldowns = new HashMap<>();
 
@@ -81,8 +86,16 @@ public abstract class Command {
         if (properties.has("required_roles")) for (JsonElement e: properties.get("required_roles").getAsJsonArray()) requiredRoles.add(e.getAsString());
         if (properties.has("required_users")) for (JsonElement e: properties.get("required_users").getAsJsonArray()) requiredUsers.add(e.getAsString());
         if (properties.has("required_channels")) for (JsonElement e: properties.get("required_channels").getAsJsonArray()) requiredChannels.add(e.getAsString());
+        if (properties.has("required_permissions")) for (JsonElement e: properties.get("required_permissions").getAsJsonArray()) requiredPermissions.add(Permission.valueOf(e.getAsString()));
+        if (properties.has("required_channel_permissions")) for (JsonElement e: properties.get("required_channel_permissions").getAsJsonArray()) requiredChannelPermissions.add(Permission.valueOf(e.getAsString()));
         if (properties.has("aliases")) for (JsonElement e: properties.get("aliases").getAsJsonArray()) aliases.add(e.getAsString());
         if (properties.has("guilds")) for (JsonElement e: properties.get("guilds").getAsJsonArray()) guilds.add(e.getAsString());
+        JsonObject errorHandlersObject = DiscordBot.getInstance().getConfig().get("error_handlers").getAsJsonObject().get("commands").getAsJsonObject();
+        JsonObject localErrorHandlersObject = (properties.has("error_handlers")) ? properties.get("error_handlers").getAsJsonObject() : new JsonObject();
+        for (String e: errorHandlersObject.keySet()) {
+            if (localErrorHandlersObject.has(e) && !localErrorHandlersObject.get(e).getAsJsonObject().isEmpty()) errorHandlers.put(e, localErrorHandlersObject.get(e).getAsJsonObject());
+            else errorHandlers.put(e, errorHandlersObject.get(e).getAsJsonObject());
+        }
         global = properties.has("global") && properties.get("global").getAsBoolean();
         description = (properties.has("description")) ? properties.get("description").getAsString() : "N/A";
         cooldown = (properties.has("cooldown")) ? properties.get("cooldown").getAsDouble() : 0;

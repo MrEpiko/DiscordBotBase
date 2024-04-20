@@ -11,9 +11,11 @@ import me.mrepiko.discordbotbase.discord.mics.Constants;
 import me.mrepiko.discordbotbase.discord.mics.PlaceholderMap;
 import me.mrepiko.discordbotbase.discord.mics.ResponseBuilder;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -176,21 +178,20 @@ public class CommandManager extends ListenerAdapter {
         CommandContext ctx = new CommandContext(event, command);
         PlaceholderMap map = new PlaceholderMap(ctx);
         DiscordBot instance = DiscordBot.getInstance();
-        JsonObject errorHandlersObject = instance.getConfig().get("error_handlers").getAsJsonObject().get("commands").getAsJsonObject();
 
         if (!command.isEnabled()) {
-            ResponseBuilder.buildAndSend(map, errorHandlersObject.get("disabled").getAsJsonObject());
+            ResponseBuilder.buildAndSend(map, command.getErrorHandlers().get("disabled"));
             return;
         }
         if (command.isAdmin() && !instance.getAdmins().contains(user.getId())) {
-            ResponseBuilder.buildAndSend(map, errorHandlersObject.get("reserved_for_admin").getAsJsonObject());
+            ResponseBuilder.buildAndSend(map, command.getErrorHandlers().get("reserved_for_admin"));
             return;
         }
         Long currentCooldown = command.getCooldowns().getOrDefault(user.getId(), 0L);
         if (currentCooldown > 0) {
             if (System.currentTimeMillis() - currentCooldown < command.getCooldown() * 1000) {
                 map.put("cooldown_time_left", String.valueOf(Math.round((double) currentCooldown / 1000 + command.getCooldown() - (double) System.currentTimeMillis() / 1000)));
-                ResponseBuilder.buildAndSend(map, errorHandlersObject.get("cooldown").getAsJsonObject());
+                ResponseBuilder.buildAndSend(map, command.getErrorHandlers().get("cooldown"));
                 return;
             } else command.getCooldowns().remove(user.getId());
         }
@@ -203,16 +204,27 @@ public class CommandManager extends ListenerAdapter {
                 }
             }
             if (!hasRole) {
-                ResponseBuilder.buildAndSend(map, errorHandlersObject.get("reserved_for_role").getAsJsonObject());
+                ResponseBuilder.buildAndSend(map, command.getErrorHandlers().get("reserved_for_role"));
                 return;
             }
         }
         if (!command.getRequiredUsers().isEmpty() && !command.getRequiredUsers().contains(user.getId())) {
-            ResponseBuilder.buildAndSend(map, errorHandlersObject.get("reserved_for_user").getAsJsonObject());
+            ResponseBuilder.buildAndSend(map, command.getErrorHandlers().get("reserved_for_user"));
             return;
         }
         if (event.isFromGuild() && !command.getRequiredChannels().isEmpty() && !command.getRequiredChannels().contains(event.getChannelId())) {
-            ResponseBuilder.buildAndSend(map, errorHandlersObject.get("reserved_for_channel").getAsJsonObject());
+            ResponseBuilder.buildAndSend(map, command.getErrorHandlers().get("reserved_for_channel"));
+            return;
+        }
+        if (event.getMember() != null && !command.getRequiredPermissions().isEmpty() && !event.getMember().hasPermission(command.getRequiredPermissions())) {
+            ResponseBuilder.buildAndSend(map, command.getErrorHandlers().get("missing_permissions"));
+            return;
+        }
+        for (Permission x : event.getMember().getPermissions((GuildMessageChannel) event.getChannel())) {
+            System.out.println(x);
+        }
+        if (event.getMember() != null && !command.getRequiredChannelPermissions().isEmpty() && !event.getMember().hasPermission((GuildMessageChannel) event.getChannel(), command.getRequiredChannelPermissions())) {
+            ResponseBuilder.buildAndSend(map, command.getErrorHandlers().get("missing_channel_permissions"));
             return;
         }
 

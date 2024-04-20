@@ -17,6 +17,18 @@ public class Constants {
                 "required_roles": [],
                 "required_users": [],
                 "required_channels": [],
+                "required_permissions": [],
+                "required_channel_permissions": [],
+                "error_handlers": {
+                    "cooldown": {},
+                    "reserved_for_role": {},
+                    "reserved_for_user": {},
+                    "reserved_for_channel": {},
+                    "reserved_for_admin": {},
+                    "missing_permissions": {},
+                    "missing_channel_permissions": {},
+                    "disabled": {}
+                },
                 "description": "N/A",
                 "admin": false,
                 "aliases": [],
@@ -86,6 +98,18 @@ public class Constants {
                 "required_roles": [],
                 "required_users": [],
                 "required_channels": [],
+                "required_permissions": [],
+                "required_channel_permissions": [],
+                "error_handlers": {
+                    "cooldown": {},
+                    "reserved_for_role": {},
+                    "reserved_for_user": {},
+                    "reserved_for_channel": {},
+                    "reserved_for_admin": {},
+                    "missing_permissions": {},
+                    "missing_channel_permissions": {},
+                    "disabled": {}
+                },
                 "timeout": 0,
                 "delete_after_timeout": 0,
                 "row_index": 0,
@@ -110,6 +134,18 @@ public class Constants {
                 "required_roles": [],
                 "required_users": [],
                 "required_channels": [],
+                "required_permissions": [],
+                "required_channel_permissions": [],
+                "error_handlers": {
+                    "cooldown": {},
+                    "reserved_for_role": {},
+                    "reserved_for_user": {},
+                    "reserved_for_channel": {},
+                    "reserved_for_admin": {},
+                    "missing_permissions": {},
+                    "missing_channel_permissions": {},
+                    "disabled": {}
+                },
                 "timeout": 0,
                 "delete_after_timeout": 0,
                 "row_index": 0,
@@ -135,7 +171,19 @@ public class Constants {
                 "ephemeral_defer": false,
                 "required_roles": [],
                 "required_users": [],
-                "required_channels": []
+                "required_channels": [],
+                "required_permissions": [],
+                "required_channel_permissions": [],
+                "error_handlers": {
+                    "cooldown": {},
+                    "reserved_for_role": {},
+                    "reserved_for_user": {},
+                    "reserved_for_channel": {},
+                    "reserved_for_admin": {},
+                    "missing_permissions": {},
+                    "missing_channel_permissions": {},
+                    "disabled": {}
+                }
               }
                         
             }
