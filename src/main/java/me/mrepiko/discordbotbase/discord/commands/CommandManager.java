@@ -220,9 +220,6 @@ public class CommandManager extends ListenerAdapter {
             ResponseBuilder.buildAndSend(map, command.getErrorHandlers().get("missing_permissions"));
             return;
         }
-        for (Permission x : event.getMember().getPermissions((GuildMessageChannel) event.getChannel())) {
-            System.out.println(x);
-        }
         if (event.getMember() != null && !command.getRequiredChannelPermissions().isEmpty() && !event.getMember().hasPermission((GuildMessageChannel) event.getChannel(), command.getRequiredChannelPermissions())) {
             ResponseBuilder.buildAndSend(map, command.getErrorHandlers().get("missing_channel_permissions"));
             return;
