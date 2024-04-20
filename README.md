@@ -15,19 +15,21 @@ DiscordBotBase is a Java project utilizing JDA, designed to empower users in cre
 5. [Modules](#modules)
 6. [ResponseBuilder](#responsebuilder)
     - [Response structure](#response-structure)
+    - [Component row overriding](#component-row-overriding)
+    - [Component appearance overriding](#component-appearance-overriding)
 7. [License](#license)
 
 ## Getting started
-1. Clone the DiscordBotBase repository to your local machine.
+1. Clone the `DiscordBotBase` repository to your local machine.
 2. Customize your bot's behavior.
-3. Explore examples and showcases in the configuration folder.
+3. Explore examples and showcases in the `configuration` folder.
 4. Build and run your bot using Java and the JDA library.
 
 ## Main configuration file
-The main configuration file (configuration/config.json) serves as the cornerstone for customizing your bot's behavior. Here, you can set default values, specify your bot's token, define admins, configure intents, error handlers, database credentials, enable modules etc.
+The main configuration file (`configuration/config.json`) serves as the cornerstone for customizing your bot's behavior. Here, you can set default values, specify your bot's token, define admins, configure intents, error handlers, database credentials, enable modules etc.
 
 ## Commands
-To implement a command, create a class extending the Command class. Register the command in CommandManager.registerCommands(). Additionally, create a JSON file with the command's name in configuration/commands. Upon bot startup, this will generate a JSON file with default properties, which are self-explanatory.
+To implement a command, create a class extending the `Command` class. Register the command in `CommandManager#registerCommands()`. Additionally, create a JSON file with the command's name in `configuration/commands`. Upon bot startup, this file will be filled with default JSON properties, which are self-explanatory. From here, you are free to customize the command's appearance and functionality.
 
 ### Command structure
 ```json
@@ -64,13 +66,13 @@ To implement a command, create a class extending the Command class. Register the
 ```
 
 ### Subcommands
-For subcommands, create a command with the name [parent command]_[subcommand]. Subcommands' properties should include a parent value referencing the parent command's name.
+In order to implement a subcommand, create a command with the name `[parent command]_[subcommand]`. Subcommand's properties should include a parent value referencing the parent command's name.
 
 ### Response commands
-Response commands require no handler implementation. These can be added to configuration/responsecommands and configured from there.
+Response commands require no handler implementation. These can be added to `configuration/responsecommands` and configured from there.
 
 ## Components
-Components include buttons, dropdowns and modals. Handlers are created similarly to command handlers and registered in ComponentManager.registerComponentHandlers.
+Components include buttons (`ButtonHandler`), dropdowns (`DropdownHandler`) and modals (`ModalHandler`). Handlers are created similarly to command handlers and are registered in `ComponentManager#registerComponentHandlers()`. 
 
 ### Button component structure
 ```json
@@ -129,10 +131,10 @@ Components include buttons, dropdowns and modals. Handlers are created similarly
 }
 ```
 ## Modules
-Modules can be enabled from the main configuration file. Each module extends the Module class and can register listeners, tasks, or both. Modules must be registered through ModuleManager.registerModules(). Listener modules should use the registerListener() method within the onEnable method to register listeners to JDA. Task modules, on the other hand, contain tasks that are repeated at intervals. Use the registerTask() method to register tasks. Module is free to have both listeners and tasks if needed.
+Modules can be enabled from the main configuration file. Each module extends the `Module` class and can register listeners, tasks, both or none. Modules must be registered through `ModuleManager#registerModules()`. Listener modules should use the `registerListener()` method within the `onEnable()` method to register listeners to JDA. Task modules, on the other hand, contain tasks that are repeated at intervals. Use the `registerTask()` method to register tasks.
 
 ## ResponseBuilder
-The ResponseBuilder class handles interactions with users, sending responses in the form of messages or modals. Use the ResponseBuilder.buildAndSend method with polymorphic methods to send responses. The bonus value allows passing data to components upon message sending. Component appearance can be overridden using various methods detailed in the code.
+The `ResponseBuilder` class handles interactions with users, sending responses in the form of messages or modals. Use the `ResponseBuilder#buildAndSend()` method to send responses. The bonus value allows passing data to components upon message sending. 
 
 ### Response structure
 ```json
@@ -165,6 +167,41 @@ The ResponseBuilder class handles interactions with users, sending responses in 
     "ephemeral": false,
     "pin": false
   }
+}
+```
+
+### Component row overriding
+```json
+{
+   "response": {
+      "message": "Hello!",
+      "components": [
+         {
+            "name": "showcase_button",
+            "row_index": 0
+         },
+         {
+            "name": "second_showcase_button",
+            "row_index": 1
+         }
+      ]
+   }
+}
+```
+
+### Component appearance overriding
+```json
+{
+   "response": {
+      "message": "Hello!",
+      "components": [
+         {
+            "name": "showcase_button",
+            "style": "DANGER",
+            "label": "Hello!"
+         }
+      ]
+   }
 }
 ```
 
