@@ -17,7 +17,8 @@ DiscordBotBase is a Java project utilizing JDA, designed to empower users in cre
     - [Response structure](#response-structure)
     - [Component row overriding](#component-row-overriding)
     - [Component appearance overriding](#component-appearance-overriding)
-7. [License](#license)
+7. [EventWaiter](#eventwaiter)
+8. [License](#license)
 
 ## Getting started
 1. Clone the `DiscordBotBase` repository to your local machine.
@@ -115,8 +116,9 @@ Components include buttons (`ButtonHandler`), dropdowns (`DropdownHandler`) and 
     },
     "timeout": 0,
     "delete_after_timeout": 0,
-    "row_index": 0,
-    "disable_once_used": true
+    "row_index": 0, 
+    "disable_once_used": false,
+    "disable_all_once_used": false
   }
 }
 ```
@@ -149,7 +151,8 @@ Components include buttons (`ButtonHandler`), dropdowns (`DropdownHandler`) and 
     "timeout": 0,
     "delete_after_timeout": 0,
     "row_index": 0,
-    "disable_once_used": true
+    "disable_once_used": false,
+    "disable_all_once_used": false
   }
 }
 ```
@@ -184,7 +187,11 @@ Components include buttons (`ButtonHandler`), dropdowns (`DropdownHandler`) and 
 Modules can be enabled from the main configuration file. Each module extends the `Module` class and can register listeners, tasks, both or none. Modules must be registered through `ModuleManager#registerModules()`. Listener modules should use the `registerListener()` method within the `onEnable()` method to register listeners to JDA. Task modules, on the other hand, contain tasks that are repeated at intervals. Use the `registerTask()` method to register tasks.
 
 ## ResponseBuilder
-The `ResponseBuilder` class handles interactions with users, sending responses in the form of messages or modals. Use the `ResponseBuilder#buildAndSend()` method to send responses. The bonus value allows passing data to components upon message sending. 
+The `ResponseBuilder` class handles interactions with users, sending responses in the form of messages or modals. Use the `ResponseBuilder#build()` method to begin response creation process. Once your response has been created, use `#send()` in order to send it. 
+
+Two values that are worth explaining are `bonus` and `predicates`:
+- `bonus` - Allows passing JsonObject data to components upon message sending. This data can later be retrieved upon handling component execution. 
+- `predicates` - Enables the integration of executable consumers to respond dynamically when specific conditions are met within a class, particularly when generating responses containing distinct components. This feature proves highly advantageous for managing components with diverse appearances yet varying functionalities and same parent handlers, such as confirmation buttons. 
 
 ### Response structure
 ```json
@@ -255,5 +262,8 @@ The `ResponseBuilder` class handles interactions with users, sending responses i
 }
 ```
 
+## EventWaiter
+
+The `EventWaiter` class facilitates awaiting events within specific classes without necessitating the registration of separate listener classes. To utilize it, simply acquire its instance from the main `DiscordBot` instance via `DiscordBot#getInstance()#getEventWaiter()`.
 ## License
 This project is licensed under the [MIT license](LICENSE.md).

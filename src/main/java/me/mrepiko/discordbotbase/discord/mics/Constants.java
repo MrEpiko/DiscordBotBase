@@ -113,7 +113,8 @@ public class Constants {
                 "timeout": 0,
                 "delete_after_timeout": 0,
                 "row_index": 0,
-                "disable_once_used": true
+                "disable_once_used": false,
+                "disable_all_once_used": false
               },
                         
               "properties": {
@@ -149,7 +150,8 @@ public class Constants {
                 "timeout": 0,
                 "delete_after_timeout": 0,
                 "row_index": 0,
-                "disable_once_used": true
+                "disable_once_used": false,
+                "disable_all_once_used": false
               },
                         
               "properties": {

@@ -20,6 +20,6 @@ public class ShowcaseDropdownHandler extends DropdownHandler {
         map.put("previous_fruit", (ctx.getRuntimeComponent() != null) ? ctx.getRuntimeComponent().get("previous_fruit").getAsString() : "N/A");
         JsonObject bonus = new JsonObject();
         bonus.addProperty("previous_fruit", fruit);
-        ResponseBuilder.buildAndSend(map, super.getComponentConfig().get("response").getAsJsonObject(), bonus);
+        ResponseBuilder.build(map, super.getComponentConfig().get("response").getAsJsonObject()).setComponentBonus(bonus).send();
     }
 }

@@ -13,6 +13,7 @@ public class BasicComponentHandler extends ComponentHandler {
     private int deleteAfterTimeout;
     private int rowIndex;
     private boolean disableOnceUsed;
+    private boolean disableAllOnceUsed;
     @Setter(AccessLevel.PROTECTED) private ItemComponent itemComponent;
 
     public BasicComponentHandler(String name) {
@@ -26,6 +27,7 @@ public class BasicComponentHandler extends ComponentHandler {
         JsonObject properties = getProperties();
         if (properties == null) return;
         disableOnceUsed = properties.has("disable_once_used") && properties.get("disable_once_used").getAsBoolean();
+        disableAllOnceUsed = properties.has("disable_all_once_used") && properties.get("disable_all_once_used").getAsBoolean();
         rowIndex = (properties.has("row_index")) ? properties.get("row_index").getAsInt() : 0;
         timeout = (properties.has("timeout")) ? properties.get("timeout").getAsInt() : 0;
         deleteAfterTimeout = (properties.has("delete_after_timeout")) ? properties.get("delete_after_timeout").getAsInt() : 0;

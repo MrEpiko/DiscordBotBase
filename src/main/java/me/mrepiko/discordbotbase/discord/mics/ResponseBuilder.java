@@ -3,6 +3,9 @@ package me.mrepiko.discordbotbase.discord.mics;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import kotlin.Pair;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import me.mrepiko.discordbotbase.discord.DiscordBot;
 import me.mrepiko.discordbotbase.discord.components.RuntimeComponent;
 import me.mrepiko.discordbotbase.discord.components.general.BasicComponentHandler;
@@ -23,9 +26,9 @@ import net.dv8tion.jda.api.requests.restaction.MessageEditAction;
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction;
 import net.dv8tion.jda.api.utils.FileUpload;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.CheckReturnValue;
 import java.awt.*;
 import java.io.File;
 import java.time.Instant;
@@ -36,78 +39,77 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
+@Getter
+@RequiredArgsConstructor
 public class ResponseBuilder {
 
-    public static void buildAndSend(PlaceholderMap map, JsonObject responseObject) {
-        buildAndSend(map, responseObject, new ArrayList<>(), new JsonObject(), null, null);
+    private final PlaceholderMap map;
+    private final JsonObject responseObject;
+    private List<File> files = new ArrayList<>();
+    private JsonObject componentBonus;
+    private HashMap<Predicate<InteractionContext>, Pair<Consumer<InteractionContext>, Consumer<InteractionContext>>> predicates = new HashMap<>();
+    private Message messageToBeEdited;
+
+    @CheckReturnValue
+    public static ResponseBuilder build(PlaceholderMap map, JsonObject responseObject) {
+        return new ResponseBuilder(map, responseObject);
     }
 
-    public static void buildAndSend(PlaceholderMap map, JsonObject responseObject, List<File> files) {
-        buildAndSend(map, responseObject, files, new JsonObject(), null, null);
+    @CheckReturnValue
+    public ResponseBuilder setFiles(List<File> files) {
+        this.files = files;
+        return this;
     }
 
-    public static void buildAndSend(PlaceholderMap map, JsonObject responseObject, JsonObject componentBonus) {
-        buildAndSend(map, responseObject, new ArrayList<>(), componentBonus, null, null);
+    @CheckReturnValue
+    public ResponseBuilder setComponentBonus(JsonObject componentBonus) {
+        this.componentBonus = componentBonus;
+        return this;
     }
 
-    public static void buildAndSend(PlaceholderMap map, JsonObject responseObject, List<File> files, JsonObject componentBonus) {
-        buildAndSend(map, responseObject, files, componentBonus, null, null);
+    @CheckReturnValue
+    public ResponseBuilder setPredicates(HashMap<Predicate<InteractionContext>, Pair<Consumer<InteractionContext>, Consumer<InteractionContext>>> predicates) {
+        this.predicates = predicates;
+        return this;
     }
 
-    public static void buildAndSend(PlaceholderMap map, JsonObject responseObject, JsonObject componentBonus, Message messageToBeEdited) {
-        buildAndSend(map, responseObject, new ArrayList<>(), componentBonus, messageToBeEdited, null);
+    @CheckReturnValue
+    public ResponseBuilder setMessageToBeEdited(Message messageToBeEdited) {
+        this.messageToBeEdited = messageToBeEdited;
+        return this;
     }
 
-    public static void buildAndSend(PlaceholderMap map, JsonObject responseObject, List<File> files, JsonObject componentBonus, Message messageToBeEdited) {
-        buildAndSend(map, responseObject, files, componentBonus, messageToBeEdited, null);
+    @CheckReturnValue
+    public ResponseBuilder addFile(File file) {
+        files.add(file);
+        return this;
     }
 
-    public static void buildAndSend(PlaceholderMap map, JsonObject responseObject, JsonObject componentBonus, Consumer<Message> postMessageAction) {
-        buildAndSend(map, responseObject, new ArrayList<>(), componentBonus, null, postMessageAction);
+    @CheckReturnValue
+    public ResponseBuilder addPredicate(Predicate<InteractionContext> predicate, @Nullable Consumer<InteractionContext> successConsumer, @Nullable Consumer<InteractionContext> failureConsumer) {
+        predicates.put(predicate, new Pair<>(successConsumer, failureConsumer));
+        return this;
     }
 
-    public static void buildAndSend(PlaceholderMap map, JsonObject responseObject, List<File> files, JsonObject componentBonus, Consumer<Message> postMessageAction) {
-        buildAndSend(map, responseObject, files, componentBonus, null, postMessageAction);
+    public void send() {
+        send(null);
     }
 
-    public static void buildAndSend(PlaceholderMap map, JsonObject responseObject, Consumer<Message> postMessageAction) {
-        buildAndSend(map, responseObject, new ArrayList<>(), new JsonObject(), null, postMessageAction);
+    public void send(Consumer<Message> postMessageAction) {
+        if (map.getCtx() instanceof InteractionContext) interactionContextSend(postMessageAction);
+        else if (map.getCtx() instanceof ChannelContext) channelContextSend(postMessageAction);
     }
 
-    public static void buildAndSend(PlaceholderMap map, JsonObject responseObject, List<File> files, Consumer<Message> postMessageAction) {
-        buildAndSend(map, responseObject, files, new JsonObject(), null, postMessageAction);
-    }
-
-    public static void buildAndSend(PlaceholderMap map, JsonObject responseObject, Message messageToBeEdited, Consumer<Message> postMessageAction) {
-        buildAndSend(map, responseObject, new ArrayList<>(), new JsonObject(), messageToBeEdited, postMessageAction);
-    }
-
-    public static void buildAndSend(PlaceholderMap map, JsonObject responseObject, List<File> files, Message messageToBeEdited, Consumer<Message> postMessageAction) {
-        buildAndSend(map, responseObject, files, new JsonObject(), messageToBeEdited, postMessageAction);
-    }
-
-    public static void buildAndSend(PlaceholderMap map, JsonObject responseObject, Message messageToBeEdited) {
-        buildAndSend(map, responseObject, new ArrayList<>(), new JsonObject(), messageToBeEdited, null);
-    }
-
-    public static void buildAndSend(PlaceholderMap map, JsonObject responseObject, List<File> files, Message messageToBeEdited) {
-        buildAndSend(map, responseObject, files, new JsonObject(), messageToBeEdited, null);
-    }
-
-    public static void buildAndSend(PlaceholderMap map, JsonObject responseObject, List<File> files, JsonObject componentBonus, @Nullable Message messageToBeEdited, @Nullable Consumer<Message> postMessageAction) {
-        if (map.getCtx() instanceof InteractionContext) interactionContextBuildAndSend(map, responseObject, files, componentBonus, messageToBeEdited, postMessageAction);
-        else if (map.getCtx() instanceof ChannelContext) channelContextBuildAndSend(map, responseObject, files, componentBonus, messageToBeEdited, postMessageAction);
-    }
-
-    private static void interactionContextBuildAndSend(PlaceholderMap map, JsonObject responseObject, List<File> files, JsonObject componentBonus, @Nullable Message messageToBeEdited, @Nullable Consumer<Message> postMessageAction) {
+    private void interactionContextSend(Consumer<Message> postMessageAction) {
         if (messageToBeEdited != null) {
-            editMessage(map, responseObject, files, componentBonus, messageToBeEdited, postMessageAction);
+            editMessage(postMessageAction);
             return;
         }
 
         InteractionContext ctx = (InteractionContext) map.getCtx();
-        Modal modal = getModal(responseObject);
+        Modal modal = getModal();
         if (modal != null && ctx.getCallback() != null && (ctx.getCallback() instanceof IModalCallback iModalCallback)) {
             iModalCallback.replyModal(modal).queue();
             DiscordBot.getInstance().getComponentManager().addModal(modal, ctx.getCallback().getId());
@@ -117,11 +119,11 @@ public class ResponseBuilder {
         boolean ephemeral = responseObject.has("ephemeral") && responseObject.get("ephemeral").getAsBoolean();
         boolean pin = responseObject.has("pin") && responseObject.get("pin").getAsBoolean();
         int deleteAfter = (responseObject.has("delete_after")) ? responseObject.get("delete_after").getAsInt() : 0;
-        String messageContent = getMessage(map, responseObject);
-        EmbedBuilder embedBuilder = getEmbed(map, responseObject);
-        List<Emoji> reactions = getReactions(responseObject);
+        String messageContent = getMessage();
+        EmbedBuilder embedBuilder = getEmbed();
+        List<Emoji> reactions = getReactions();
 
-        List<RuntimeComponent> components = getRuntimeComponents(responseObject, componentBonus);
+        List<RuntimeComponent> components = getRuntimeComponents();
         components.forEach(c -> DiscordBot.getInstance().getComponentManager().addRuntimeComponent(c));
         List<ActionRow> actionRows = sortIntoActionRows(components);
 
@@ -164,9 +166,9 @@ public class ResponseBuilder {
         }
     }
 
-    private static void channelContextBuildAndSend(PlaceholderMap map, JsonObject responseObject, List<File> files, JsonObject componentBonus, @Nullable Message messageToBeEdited, @Nullable Consumer<Message> postMessageAction) {
+    private void channelContextSend(Consumer<Message> postMessageAction) {
         if (messageToBeEdited != null) {
-            editMessage(map, responseObject, files, componentBonus, messageToBeEdited, postMessageAction);
+            editMessage(postMessageAction);
             return;
         }
 
@@ -174,11 +176,11 @@ public class ResponseBuilder {
         if (ctx.getChannel() == null) return;
         boolean pin = responseObject.has("pin") && responseObject.get("pin").getAsBoolean();
         int deleteAfter = (responseObject.has("delete_after")) ? responseObject.get("delete_after").getAsInt() : 0;
-        String messageContent = getMessage(map, responseObject);
-        EmbedBuilder embedBuilder = getEmbed(map, responseObject);
-        List<Emoji> reactions = getReactions(responseObject);
+        String messageContent = getMessage();
+        EmbedBuilder embedBuilder = getEmbed();
+        List<Emoji> reactions = getReactions();
 
-        List<RuntimeComponent> components = getRuntimeComponents(responseObject, componentBonus);
+        List<RuntimeComponent> components = getRuntimeComponents();
         components.forEach(c -> DiscordBot.getInstance().getComponentManager().addRuntimeComponent(c));
         List<ActionRow> actionRows = sortIntoActionRows(components);
 
@@ -198,15 +200,15 @@ public class ResponseBuilder {
         });
     }
 
-    private static void editMessage(PlaceholderMap map, JsonObject responseObject, List<File> files, JsonObject componentBonus, @NotNull Message messageToBeEdited, @Nullable Consumer<Message> postMessageAction) {
+    private void editMessage(Consumer<Message> postMessageAction) {
         if (messageToBeEdited.isEphemeral()) return;
         boolean pin = responseObject.has("pin") && responseObject.get("pin").getAsBoolean();
         int deleteAfter = (responseObject.has("delete_after")) ? responseObject.get("delete_after").getAsInt() : 0;
-        String messageContent = getMessage(map, responseObject);
-        EmbedBuilder embedBuilder = getEmbed(map, responseObject);
-        List<Emoji> reactions = getReactions(responseObject);
+        String messageContent = getMessage();
+        EmbedBuilder embedBuilder = getEmbed();
+        List<Emoji> reactions = getReactions();
 
-        List<RuntimeComponent> components = getRuntimeComponents(responseObject, componentBonus);
+        List<RuntimeComponent> components = getRuntimeComponents();
         components.forEach(c -> DiscordBot.getInstance().getComponentManager().addRuntimeComponent(c));
         List<ActionRow> actionRows = sortIntoActionRows(components);
 
@@ -226,7 +228,7 @@ public class ResponseBuilder {
         });
     }
 
-    private static String getMessage(PlaceholderMap map, JsonObject responseObject) {
+    private String getMessage() {
         if (!responseObject.has("message")) return "";
         String message = DiscordBot.getInstance().applyPlaceholders(map, responseObject.get("message").getAsString());
         if (message.length() > 2000) message = message.substring(0, 1996) + DiscordBot.getInstance().getTruncationIndicator();
@@ -234,7 +236,7 @@ public class ResponseBuilder {
     }
 
     @Nullable
-    private static EmbedBuilder getEmbed(PlaceholderMap map, JsonObject responseObject) {
+    private EmbedBuilder getEmbed() {
         if (!responseObject.has("description") && !responseObject.has("title")) return null;
         DiscordBot instance = DiscordBot.getInstance();
         String indicator = instance.getTruncationIndicator();
@@ -308,14 +310,14 @@ public class ResponseBuilder {
         return embedBuilder;
     }
 
-    private static List<Emoji> getReactions(JsonObject responseObject) {
+    private List<Emoji> getReactions() {
         List<Emoji> reactions = new ArrayList<>();
         if (!responseObject.has("reactions")) return reactions;
         for (JsonElement e: responseObject.get("reactions").getAsJsonArray()) reactions.add(Emoji.fromUnicode(e.getAsString()));
         return reactions;
     }
 
-    private static List<RuntimeComponent> getRuntimeComponents(JsonObject responseObject, JsonObject bonus) {
+    private List<RuntimeComponent> getRuntimeComponents() {
         List<RuntimeComponent> runtimeComponents = new ArrayList<>();
         if (!responseObject.has("components")) return runtimeComponents;
         for (JsonElement e: responseObject.get("components").getAsJsonArray()) {
@@ -333,9 +335,10 @@ public class ResponseBuilder {
             if (!(componentHandler instanceof BasicComponentHandler basicComponentHandler)) continue;
             RuntimeComponent runtimeComponent = new RuntimeComponent(
                     basicComponentHandler,
-                    bonus,
+                    componentBonus,
                     (requiresAppearanceOverriding) ? ComponentUtils.createComponent(componentName, e.getAsJsonObject()) : null,
-                    (requiresRowOverriding) ? e.getAsJsonObject().get("row_index").getAsInt() : basicComponentHandler.getRowIndex()
+                    (requiresRowOverriding) ? e.getAsJsonObject().get("row_index").getAsInt() : basicComponentHandler.getRowIndex(),
+                    predicates
             );
             runtimeComponents.add(runtimeComponent);
         }
@@ -343,7 +346,7 @@ public class ResponseBuilder {
     }
 
     @Nullable
-    private static Modal getModal(JsonObject responseObject) {
+    private Modal getModal() {
         if (!responseObject.has("modal")) return null;
         boolean requiresOverriding = responseObject.get("modal").isJsonObject();
         String modalName = (requiresOverriding) ? responseObject.get("modal").getAsJsonObject().get("name").getAsString() : responseObject.get("modal").getAsString();
@@ -352,7 +355,7 @@ public class ResponseBuilder {
         return (requiresOverriding) ? ComponentUtils.createModal(modalName, responseObject.get("modal").getAsJsonObject()) : modalHandler.getModal();
     }
 
-    private static List<ActionRow> sortIntoActionRows(List<RuntimeComponent> components) {
+    private List<ActionRow> sortIntoActionRows(List<RuntimeComponent> components) {
         if (components.isEmpty()) return new ArrayList<>();
         HashMap<Integer, List<RuntimeComponent>> sortedComponents = new HashMap<>();
         for (int i = 0; i < 5; i++) sortedComponents.put(i, new ArrayList<>());

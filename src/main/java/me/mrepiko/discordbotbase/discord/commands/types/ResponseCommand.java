@@ -13,6 +13,6 @@ public class ResponseCommand extends Command {
     @Override
     public void handle(CommandContext ctx) {
         PlaceholderMap map = new PlaceholderMap(ctx);
-        ResponseBuilder.buildAndSend(map, super.getCommandConfig().get("response").getAsJsonObject());
+        ResponseBuilder.build(map, super.getCommandConfig().get("response").getAsJsonObject()).send();
     }
 }

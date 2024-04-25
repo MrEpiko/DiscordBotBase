@@ -1,43 +1,50 @@
 package me.mrepiko.discordbotbase.discord.components;
 
 import com.google.gson.JsonObject;
+import kotlin.Pair;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Delegate;
 import me.mrepiko.discordbotbase.discord.components.general.BasicComponentHandler;
+import me.mrepiko.discordbotbase.discord.context.InteractionContext;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.interactions.components.ItemComponent;
 import net.dv8tion.jda.api.interactions.components.LayoutComponent;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
-@RequiredArgsConstructor
 @Getter
 public class RuntimeComponent {
 
     private final BasicComponentHandler basicComponentHandler;
     @Delegate private final JsonObject bonus;
-    private ItemComponent overrideComponent;
-    private int overrideRowIndex;
+    @Nullable private final HashMap<Predicate<InteractionContext>, Pair<Consumer<InteractionContext>, Consumer<InteractionContext>>> predicates;
+    private final ItemComponent overrideComponent;
+    private final int overrideRowIndex;
+
     @Setter private String messageId;
 
-    public RuntimeComponent(BasicComponentHandler basicComponentHandler, JsonObject object, @Nullable ItemComponent overrideComponent, int overrideRowIndex) {
-        this(basicComponentHandler, object, overrideComponent);
-        this.overrideRowIndex = overrideRowIndex;
-    }
-
-    public RuntimeComponent(BasicComponentHandler basicComponentHandler, JsonObject bonus, int overrideRowIndex) {
-        this(basicComponentHandler, bonus);
-        this.overrideRowIndex = overrideRowIndex;
-    }
-
-    public RuntimeComponent(BasicComponentHandler basicComponentHandler, JsonObject bonus, @Nullable ItemComponent overrideComponent) {
-        this(basicComponentHandler, bonus);
+    public RuntimeComponent(BasicComponentHandler basicComponentHandler, JsonObject bonus, ItemComponent overrideComponent, int overrideRowIndex, @Nullable HashMap<Predicate<InteractionContext>, Pair<Consumer<InteractionContext>, Consumer<InteractionContext>>> predicates) {
+        this.basicComponentHandler = basicComponentHandler;
+        this.bonus = bonus;
         this.overrideComponent = overrideComponent;
+        this.overrideRowIndex = overrideRowIndex;
+        this.predicates = predicates;
+    }
+
+    public void checkPredicates(InteractionContext interactionContext) {
+        if (predicates == null) return;
+        for (Map.Entry<Predicate<InteractionContext>, Pair<Consumer<InteractionContext>, Consumer<InteractionContext>>> e: predicates.entrySet()) {
+            if (e.getKey().test(interactionContext) && e.getValue().getFirst() != null) e.getValue().getFirst().accept(interactionContext);
+            else if (e.getValue().getSecond() != null) e.getValue().getSecond().accept(interactionContext);
+        }
     }
 
     public ItemComponent getComponent() {

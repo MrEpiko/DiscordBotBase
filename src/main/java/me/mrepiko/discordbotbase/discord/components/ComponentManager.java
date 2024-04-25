@@ -109,17 +109,21 @@ public class ComponentManager extends ListenerAdapter {
         if (!(componentHandler instanceof ButtonHandler buttonHandler)) return;
         ButtonContext ctx = new ButtonContext(event, runtimeComponent);
         PlaceholderMap map = new PlaceholderMap(ctx);
+        if (runtimeComponent != null) runtimeComponent.checkPredicates(ctx);
         if (!checkForRequirements(map, componentHandler)) return;
-        if (buttonHandler.getComponentConfig().has("default_response")) ResponseBuilder.buildAndSend(map, componentHandler.getComponentConfig().get("default_response").getAsJsonObject());
+        if (buttonHandler.getComponentConfig().has("default_response")) ResponseBuilder.build(map, componentHandler.getComponentConfig().get("default_response").getAsJsonObject()).send();
         else {
             if (buttonHandler.isDefer()) ctx.getCallback().deferReply(buttonHandler.isEphemeralDefer()).queue();
             buttonHandler.handle(ctx);
         }
-        if (!buttonHandler.isDisableOnceUsed()) return;
+        if (!buttonHandler.isDisableOnceUsed() && !buttonHandler.isDisableAllOnceUsed()) return;
         List<List<ActionComponent>> itemComponents = new ArrayList<>();
         for (LayoutComponent c: event.getMessage().getComponents()) {
             List<ActionComponent> actionComponents = new ArrayList<>();
-            for (ActionComponent a: c.getActionComponents()) actionComponents.add((a.getId() == null || !a.getId().equalsIgnoreCase(buttonHandler.getName())) ? a : a.asDisabled());
+            for (ActionComponent a: c.getActionComponents()) {
+                if (buttonHandler.isDisableAllOnceUsed()) actionComponents.add(a.asDisabled());
+                else actionComponents.add((a.getId() == null || !a.getId().equalsIgnoreCase(buttonHandler.getName())) ? a : a.asDisabled());
+            }
             itemComponents.add(actionComponents);
         }
         event.getMessage().editMessageComponents(itemComponents.stream().map(ActionRow::of).toList()).queue();
@@ -132,17 +136,21 @@ public class ComponentManager extends ListenerAdapter {
         if (!(componentHandler instanceof DropdownHandler dropdownHandler)) return;
         DropdownContext ctx = new DropdownContext(event, runtimeComponent);
         PlaceholderMap map = new PlaceholderMap(ctx);
+        if (runtimeComponent != null) runtimeComponent.checkPredicates(ctx);
         if (!checkForRequirements(map, componentHandler)) return;
-        if (dropdownHandler.getComponentConfig().has("default_response")) ResponseBuilder.buildAndSend(map, componentHandler.getComponentConfig().get("default_response").getAsJsonObject());
+        if (dropdownHandler.getComponentConfig().has("default_response")) ResponseBuilder.build(map, componentHandler.getComponentConfig().get("default_response").getAsJsonObject()).send();
         else {
             if (dropdownHandler.isDefer()) ctx.getCallback().deferReply(dropdownHandler.isEphemeralDefer()).queue();
             dropdownHandler.handle(ctx);
         }
-        if (!dropdownHandler.isDisableOnceUsed()) return;
+        if (!dropdownHandler.isDisableOnceUsed() && !dropdownHandler.isDisableAllOnceUsed()) return;
         List<List<ActionComponent>> itemComponents = new ArrayList<>();
         for (LayoutComponent c: event.getMessage().getComponents()) {
             List<ActionComponent> actionComponents = new ArrayList<>();
-            for (ActionComponent a: c.getActionComponents()) actionComponents.add((a.getId() == null || !a.getId().equalsIgnoreCase(dropdownHandler.getName())) ? a : a.asDisabled());
+            for (ActionComponent a: c.getActionComponents()) {
+                if (dropdownHandler.isDisableAllOnceUsed()) actionComponents.add(a.asDisabled());
+                else actionComponents.add((a.getId() == null || !a.getId().equalsIgnoreCase(dropdownHandler.getName())) ? a : a.asDisabled());
+            }
             itemComponents.add(actionComponents);
         }
         event.getMessage().editMessageComponents(itemComponents.stream().map(ActionRow::of).toList()).queue();
@@ -157,7 +165,7 @@ public class ComponentManager extends ListenerAdapter {
         PlaceholderMap map = new PlaceholderMap(ctx);
         if (!checkForRequirements(map, modalHandler)) return;
         if (modalHandler.getComponentConfig().has("default_response")) {
-            ResponseBuilder.buildAndSend(map, modalHandler.getComponentConfig().get("default_response").getAsJsonObject());
+            ResponseBuilder.build(map, modalHandler.getComponentConfig().get("default_response").getAsJsonObject()).send();
             return;
         }
         if (modalHandler.isDefer()) ctx.getCallback().deferReply(modalHandler.isEphemeralDefer()).queue();
@@ -172,18 +180,18 @@ public class ComponentManager extends ListenerAdapter {
         JsonObject errorHandlersObject = instance.getConfig().get("error_handlers").getAsJsonObject().get("components").getAsJsonObject();
 
         if (!componentHandler.isEnabled()) {
-            ResponseBuilder.buildAndSend(map, errorHandlersObject.get("disabled").getAsJsonObject());
+            ResponseBuilder.build(map, errorHandlersObject.get("disabled").getAsJsonObject()).send();
             return false;
         }
         if (componentHandler.isAdmin() && !instance.getAdmins().contains(user.getId())) {
-            ResponseBuilder.buildAndSend(map, errorHandlersObject.get("reserved_for_admin").getAsJsonObject());
+            ResponseBuilder.build(map, errorHandlersObject.get("reserved_for_admin").getAsJsonObject()).send();
             return false;
         }
         Long currentCooldown = componentHandler.getCooldowns().getOrDefault(user.getId(), 0L);
         if (currentCooldown > 0) {
             if (System.currentTimeMillis() - currentCooldown < componentHandler.getCooldown() * 1000) {
                 map.put("cooldown_time_left", String.valueOf(Math.round((double) currentCooldown / 1000 + componentHandler.getCooldown() - (double) System.currentTimeMillis() / 1000)));
-                ResponseBuilder.buildAndSend(map, errorHandlersObject.get("cooldown").getAsJsonObject());
+                ResponseBuilder.build(map, errorHandlersObject.get("cooldown").getAsJsonObject()).send();
                 return false;
             } else componentHandler.getCooldowns().remove(user.getId());
         }
@@ -196,25 +204,25 @@ public class ComponentManager extends ListenerAdapter {
                 }
             }
             if (!hasRole) {
-                ResponseBuilder.buildAndSend(map, errorHandlersObject.get("reserved_for_role").getAsJsonObject());
+                ResponseBuilder.build(map, errorHandlersObject.get("reserved_for_role").getAsJsonObject()).send();
                 return false;
             }
         }
         if (!componentHandler.getRequiredUsers().isEmpty() && !componentHandler.getRequiredUsers().contains(user.getId())) {
-            ResponseBuilder.buildAndSend(map, errorHandlersObject.get("reserved_for_user").getAsJsonObject());
+            ResponseBuilder.build(map, errorHandlersObject.get("reserved_for_user").getAsJsonObject()).send();
             return false;
         }
         if (map.getCtx().getGuild() != null && map.getCtx().getChannel() != null && !componentHandler.getRequiredChannels().isEmpty() && !componentHandler.getRequiredChannels().contains(map.getCtx().getChannel().getId())) {
-            ResponseBuilder.buildAndSend(map, errorHandlersObject.get("reserved_for_channel").getAsJsonObject());
+            ResponseBuilder.build(map, errorHandlersObject.get("reserved_for_channel").getAsJsonObject()).send();
             return false;
         }
         Member member = map.getCtx().getMember();
         if (member != null && !componentHandler.getRequiredPermissions().isEmpty() && !member.hasPermission(componentHandler.getRequiredPermissions())) {
-            ResponseBuilder.buildAndSend(map, componentHandler.getErrorHandlers().get("missing_permissions"));
+            ResponseBuilder.build(map, componentHandler.getErrorHandlers().get("missing_permissions")).send();
             return false;
         }
         if (member != null && map.getCtx().getChannel() != null && !componentHandler.getRequiredChannelPermissions().isEmpty() && !member.hasPermission((GuildMessageChannel) map.getCtx().getChannel(), componentHandler.getRequiredChannelPermissions())) {
-            ResponseBuilder.buildAndSend(map, componentHandler.getErrorHandlers().get("missing_channel_permissions"));
+            ResponseBuilder.build(map, componentHandler.getErrorHandlers().get("missing_channel_permissions")).send();
             return false;
         }
 

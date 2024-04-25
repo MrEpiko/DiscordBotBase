@@ -1,6 +1,5 @@
 package me.mrepiko.discordbotbase.discord.commands;
 
-import com.google.gson.JsonObject;
 import lombok.Getter;
 import me.mrepiko.discordbotbase.discord.DiscordBot;
 import me.mrepiko.discordbotbase.discord.commands.handlers.ShowcaseCmd;
@@ -11,7 +10,6 @@ import me.mrepiko.discordbotbase.discord.mics.Constants;
 import me.mrepiko.discordbotbase.discord.mics.PlaceholderMap;
 import me.mrepiko.discordbotbase.discord.mics.ResponseBuilder;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
@@ -180,18 +178,18 @@ public class CommandManager extends ListenerAdapter {
         DiscordBot instance = DiscordBot.getInstance();
 
         if (!command.isEnabled()) {
-            ResponseBuilder.buildAndSend(map, command.getErrorHandlers().get("disabled"));
+            ResponseBuilder.build(map, command.getErrorHandlers().get("disabled")).send();
             return;
         }
         if (command.isAdmin() && !instance.getAdmins().contains(user.getId())) {
-            ResponseBuilder.buildAndSend(map, command.getErrorHandlers().get("reserved_for_admin"));
+            ResponseBuilder.build(map, command.getErrorHandlers().get("reserved_for_admin")).send();
             return;
         }
         Long currentCooldown = command.getCooldowns().getOrDefault(user.getId(), 0L);
         if (currentCooldown > 0) {
             if (System.currentTimeMillis() - currentCooldown < command.getCooldown() * 1000) {
                 map.put("cooldown_time_left", String.valueOf(Math.round((double) currentCooldown / 1000 + command.getCooldown() - (double) System.currentTimeMillis() / 1000)));
-                ResponseBuilder.buildAndSend(map, command.getErrorHandlers().get("cooldown"));
+                ResponseBuilder.build(map, command.getErrorHandlers().get("cooldown")).send();
                 return;
             } else command.getCooldowns().remove(user.getId());
         }
@@ -204,24 +202,24 @@ public class CommandManager extends ListenerAdapter {
                 }
             }
             if (!hasRole) {
-                ResponseBuilder.buildAndSend(map, command.getErrorHandlers().get("reserved_for_role"));
+                ResponseBuilder.build(map, command.getErrorHandlers().get("reserved_for_role")).send();
                 return;
             }
         }
         if (!command.getRequiredUsers().isEmpty() && !command.getRequiredUsers().contains(user.getId())) {
-            ResponseBuilder.buildAndSend(map, command.getErrorHandlers().get("reserved_for_user"));
+            ResponseBuilder.build(map, command.getErrorHandlers().get("reserved_for_user")).send();
             return;
         }
         if (event.isFromGuild() && !command.getRequiredChannels().isEmpty() && !command.getRequiredChannels().contains(event.getChannelId())) {
-            ResponseBuilder.buildAndSend(map, command.getErrorHandlers().get("reserved_for_channel"));
+            ResponseBuilder.build(map, command.getErrorHandlers().get("reserved_for_channel")).send();
             return;
         }
         if (event.getMember() != null && !command.getRequiredPermissions().isEmpty() && !event.getMember().hasPermission(command.getRequiredPermissions())) {
-            ResponseBuilder.buildAndSend(map, command.getErrorHandlers().get("missing_permissions"));
+            ResponseBuilder.build(map, command.getErrorHandlers().get("missing_permissions")).send();
             return;
         }
         if (event.getMember() != null && !command.getRequiredChannelPermissions().isEmpty() && !event.getMember().hasPermission((GuildMessageChannel) event.getChannel(), command.getRequiredChannelPermissions())) {
-            ResponseBuilder.buildAndSend(map, command.getErrorHandlers().get("missing_channel_permissions"));
+            ResponseBuilder.build(map, command.getErrorHandlers().get("missing_channel_permissions")).send();
             return;
         }
 

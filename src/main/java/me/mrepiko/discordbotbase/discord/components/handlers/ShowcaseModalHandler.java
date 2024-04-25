@@ -16,6 +16,6 @@ public class ShowcaseModalHandler extends ModalHandler {
         String answer = ctx.getValue("showcase_modal.answer", "No answer!");
         PlaceholderMap map = new PlaceholderMap(ctx);
         map.put("answer", answer);
-        ResponseBuilder.buildAndSend(map, super.getComponentConfig().get("response").getAsJsonObject());
+        ResponseBuilder.build(map, super.getComponentConfig().get("response").getAsJsonObject()).send();
     }
 }
