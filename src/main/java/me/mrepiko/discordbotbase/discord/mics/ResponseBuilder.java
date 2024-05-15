@@ -251,7 +251,7 @@ public class ResponseBuilder {
             if (title.length() > 256) title = title.substring(0, 252) + indicator;
             if (titleUrl.length() > 2000) titleUrl = "";
             if (titleUrl.isEmpty()) embedBuilder.setTitle(title);
-            else embedBuilder.setTitle(title, titleUrl);
+            else if (Utils.isUrl(titleUrl)) embedBuilder.setTitle(title, titleUrl);
         }
         if (!description.isEmpty()) {
             if (description.length() > 4096) description = description.substring(0, 4092) + indicator;
@@ -261,7 +261,7 @@ public class ResponseBuilder {
             if (footerText.length() > 2048) footerText = footerIconUrl.substring(0, 2044) + indicator;
             if (footerIconUrl.length() > 2000) footerIconUrl = "";
             if (footerIconUrl.isEmpty()) embedBuilder.setFooter(footerText);
-            else embedBuilder.setFooter(footerText, footerIconUrl);
+            else if (Utils.isUrl(footerIconUrl)) embedBuilder.setFooter(footerText, footerIconUrl);
         }
         if (!authorText.isEmpty()) {
             if (authorText.length() > 256) authorText = authorUrl.substring(0, 252) + indicator;
@@ -269,20 +269,20 @@ public class ResponseBuilder {
             if (authorIconUrl.length() > 2000) authorIconUrl = "";
             if (authorUrl.isEmpty()) {
                 if (authorIconUrl.isEmpty()) embedBuilder.setAuthor(authorText);
-                else embedBuilder.setAuthor(authorText, authorIconUrl, authorIconUrl);
+                else if (Utils.isUrl(authorIconUrl)) embedBuilder.setAuthor(authorText, authorIconUrl, authorIconUrl);
             } else {
                 if (authorIconUrl.isEmpty()) embedBuilder.setAuthor(authorText, authorUrl);
-                else embedBuilder.setAuthor(authorText, authorUrl, authorIconUrl);
+                else if (Utils.isUrl(authorIconUrl)) embedBuilder.setAuthor(authorText, authorUrl, authorIconUrl);
             }
         }
         if (!timestamp.isEmpty()) embedBuilder.setTimestamp(LocalDateTime.ofInstant(Instant.ofEpochMilli(Long.decode(timestamp)), ZoneId.systemDefault()));
         if (!thumbnailUrl.isEmpty()) {
             if (thumbnailUrl.length() > 2000) thumbnailUrl = "";
-            embedBuilder.setThumbnail(thumbnailUrl);
+            if (Utils.isUrl(thumbnailUrl)) embedBuilder.setThumbnail(thumbnailUrl);
         }
         if (!imageUrl.isEmpty()) {
             if (imageUrl.length() > 2000) imageUrl = "";
-            embedBuilder.setImage(imageUrl);
+            if (Utils.isUrl(imageUrl)) embedBuilder.setImage(imageUrl);
         }
         if (!color.isEmpty()) embedBuilder.setColor(Color.decode(color));
         for (JsonElement e: fields) {

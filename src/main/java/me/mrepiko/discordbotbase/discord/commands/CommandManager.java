@@ -143,7 +143,7 @@ public class CommandManager extends ListenerAdapter {
                     " " +
                     name +
                     " has been registered " +
-                    ((command.isGlobal()) ? "globally" : "in " + command.getGuilds().size() + " guild(s)") +
+                    ((command.isGlobal()) ? "globally" : "in " + ((command.getGuilds().size() == 0) ? DiscordBot.getInstance().getJda().getGuilds().size() : command.getGuilds().size()) + " guild(s)") +
                     ((command.getChildren().isEmpty()) ? "." : " with " + command.getChildren().size() + " subcommand(s).")
             );
         }
