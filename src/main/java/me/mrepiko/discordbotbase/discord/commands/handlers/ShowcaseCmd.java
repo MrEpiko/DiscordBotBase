@@ -26,10 +26,10 @@ public class ShowcaseCmd extends Command {
         bonus.addProperty("previous_fruit", fruit);
         ResponseBuilder.build(map, super.getCommandConfig().get("response").getAsJsonObject())
                 .setComponentBonus(bonus)
-                .addPredicate(
-                        interactionContext -> !(interactionContext instanceof ButtonContext) || ((ButtonContext) interactionContext).getButton().getStyle() == ButtonStyle.DANGER,
-                        interactionContext -> System.out.println("This appears to be a dangerous button!"),
-                        interactionContext -> System.out.println("This appears to not be such a dangerous button at all!"))
+                .setConsumer(interactionContext -> {
+                    if (!(interactionContext instanceof ButtonContext buttonContext)) return;
+                    System.out.println((buttonContext.getButton().getStyle() == ButtonStyle.DANGER) ? "This is a dangerous button!" : "This is not so dangerous button.");
+                })
                 .send();
     }
 

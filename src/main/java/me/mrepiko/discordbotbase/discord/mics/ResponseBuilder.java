@@ -3,7 +3,6 @@ package me.mrepiko.discordbotbase.discord.mics;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import kotlin.Pair;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import me.mrepiko.discordbotbase.discord.DiscordBot;
@@ -39,7 +38,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 @Getter
 @RequiredArgsConstructor
@@ -49,7 +47,7 @@ public class ResponseBuilder {
     private final JsonObject responseObject;
     private List<File> files = new ArrayList<>();
     private JsonObject componentBonus;
-    private HashMap<Predicate<InteractionContext>, Pair<Consumer<InteractionContext>, Consumer<InteractionContext>>> predicates = new HashMap<>();
+    private Consumer<InteractionContext> consumer;
     private Message messageToBeEdited;
 
     @CheckReturnValue
@@ -70,8 +68,8 @@ public class ResponseBuilder {
     }
 
     @CheckReturnValue
-    public ResponseBuilder setPredicates(HashMap<Predicate<InteractionContext>, Pair<Consumer<InteractionContext>, Consumer<InteractionContext>>> predicates) {
-        this.predicates = predicates;
+    public ResponseBuilder setConsumer(Consumer<InteractionContext> consumer) {
+        this.consumer = consumer;
         return this;
     }
 
@@ -84,12 +82,6 @@ public class ResponseBuilder {
     @CheckReturnValue
     public ResponseBuilder addFile(File file) {
         files.add(file);
-        return this;
-    }
-
-    @CheckReturnValue
-    public ResponseBuilder addPredicate(Predicate<InteractionContext> predicate, @Nullable Consumer<InteractionContext> successConsumer, @Nullable Consumer<InteractionContext> failureConsumer) {
-        predicates.put(predicate, new Pair<>(successConsumer, failureConsumer));
         return this;
     }
 
@@ -338,7 +330,7 @@ public class ResponseBuilder {
                     componentBonus,
                     (requiresAppearanceOverriding) ? ComponentUtils.createComponent(componentName, e.getAsJsonObject()) : null,
                     (requiresRowOverriding) ? e.getAsJsonObject().get("row_index").getAsInt() : basicComponentHandler.getRowIndex(),
-                    predicates
+                    consumer
             );
             runtimeComponents.add(runtimeComponent);
         }

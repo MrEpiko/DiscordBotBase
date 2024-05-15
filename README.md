@@ -189,9 +189,9 @@ Modules can be enabled from the main configuration file. Each module extends the
 ## ResponseBuilder
 The `ResponseBuilder` class handles interactions with users, sending responses in the form of messages or modals. Use the `ResponseBuilder#build()` method to begin response creation process. Once your response has been created, use `#send()` in order to send it. 
 
-Two values that are worth explaining are `bonus` and `predicates`:
+Two values that are worth explaining are `bonus` and `consumer`:
 - `bonus` - Allows passing JsonObject data to components upon message sending. This data can later be retrieved upon handling component execution. 
-- `predicates` - Enables the integration of executable consumers to respond dynamically when specific conditions are met within a class, particularly when generating responses containing distinct components. This feature proves highly advantageous for managing components with diverse appearances yet varying functionalities and same parent handlers, such as confirmation buttons. 
+- `consumer` - Enables the integration of executable consumer to respond when component is used. This feature proves highly advantageous for managing components with diverse appearances yet varying functionalities and same parent handlers, such as confirmation buttons. 
 
 ### Response structure
 ```json

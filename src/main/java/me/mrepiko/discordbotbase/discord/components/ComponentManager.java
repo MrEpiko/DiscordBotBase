@@ -109,7 +109,7 @@ public class ComponentManager extends ListenerAdapter {
         if (!(componentHandler instanceof ButtonHandler buttonHandler)) return;
         ButtonContext ctx = new ButtonContext(event, runtimeComponent);
         PlaceholderMap map = new PlaceholderMap(ctx);
-        if (runtimeComponent != null) runtimeComponent.checkPredicates(ctx);
+        if (runtimeComponent != null) runtimeComponent.acceptConsumer(ctx);
         if (!checkForRequirements(map, componentHandler)) return;
         if (buttonHandler.getComponentConfig().has("default_response")) ResponseBuilder.build(map, componentHandler.getComponentConfig().get("default_response").getAsJsonObject()).send();
         else {
@@ -136,7 +136,7 @@ public class ComponentManager extends ListenerAdapter {
         if (!(componentHandler instanceof DropdownHandler dropdownHandler)) return;
         DropdownContext ctx = new DropdownContext(event, runtimeComponent);
         PlaceholderMap map = new PlaceholderMap(ctx);
-        if (runtimeComponent != null) runtimeComponent.checkPredicates(ctx);
+        if (runtimeComponent != null) runtimeComponent.acceptConsumer(ctx);
         if (!checkForRequirements(map, componentHandler)) return;
         if (dropdownHandler.getComponentConfig().has("default_response")) ResponseBuilder.build(map, componentHandler.getComponentConfig().get("default_response").getAsJsonObject()).send();
         else {
