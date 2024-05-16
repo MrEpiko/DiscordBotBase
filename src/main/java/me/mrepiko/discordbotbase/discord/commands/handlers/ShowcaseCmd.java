@@ -26,7 +26,7 @@ public class ShowcaseCmd extends Command {
         bonus.addProperty("previous_fruit", fruit);
         ResponseBuilder.build(map, super.getCommandConfig().get("response").getAsJsonObject())
                 .setComponentBonus(bonus)
-                .setConsumer(interactionContext -> {
+                .setComponentConsumer(interactionContext -> {
                     if (!(interactionContext instanceof ButtonContext buttonContext)) return;
                     System.out.println((buttonContext.getButton().getStyle() == ButtonStyle.DANGER) ? "This is a dangerous button!" : "This is not so dangerous button.");
                 })

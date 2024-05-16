@@ -47,7 +47,9 @@ public class ResponseBuilder {
     private final JsonObject responseObject;
     private List<File> files = new ArrayList<>();
     private JsonObject componentBonus;
-    private Consumer<InteractionContext> consumer;
+    private Consumer<InteractionContext> componentConsumer;
+    private Consumer<Message> postMessageAction;
+    private Consumer<Throwable> throwableConsumer;
     private Message messageToBeEdited;
 
     @CheckReturnValue
@@ -68,8 +70,8 @@ public class ResponseBuilder {
     }
 
     @CheckReturnValue
-    public ResponseBuilder setConsumer(Consumer<InteractionContext> consumer) {
-        this.consumer = consumer;
+    public ResponseBuilder setComponentConsumer(Consumer<InteractionContext> componentConsumer) {
+        this.componentConsumer = componentConsumer;
         return this;
     }
 
@@ -86,17 +88,23 @@ public class ResponseBuilder {
     }
 
     public void send() {
-        send(null);
+        send(null, null);
     }
 
     public void send(Consumer<Message> postMessageAction) {
-        if (map.getCtx() instanceof InteractionContext) interactionContextSend(postMessageAction);
-        else if (map.getCtx() instanceof ChannelContext) channelContextSend(postMessageAction);
+        send(postMessageAction, null);
     }
 
-    private void interactionContextSend(Consumer<Message> postMessageAction) {
+    public void send(Consumer<Message> postMessageAction, Consumer<Throwable> throwableConsumer) {
+        this.postMessageAction = postMessageAction;
+        this.throwableConsumer = throwableConsumer;
+        if (map.getCtx() instanceof InteractionContext) interactionContextSend();
+        else if (map.getCtx() instanceof ChannelContext) channelContextSend();
+    }
+
+    private void interactionContextSend() {
         if (messageToBeEdited != null) {
-            editMessage(postMessageAction);
+            editMessage();
             return;
         }
 
@@ -113,6 +121,7 @@ public class ResponseBuilder {
         int deleteAfter = (responseObject.has("delete_after")) ? responseObject.get("delete_after").getAsInt() : 0;
         String messageContent = getMessage();
         EmbedBuilder embedBuilder = getEmbed();
+        if (messageContent.isEmpty() && embedBuilder == null) return;
         List<Emoji> reactions = getReactions();
 
         List<RuntimeComponent> components = getRuntimeComponents();
@@ -136,6 +145,9 @@ public class ResponseBuilder {
                     c.applyTimeout(message);
                 }
                 if (!message.isEphemeral()) for (Emoji e: reactions) message.addReaction(Emoji.fromUnicode(Utils.adaptEmoji(e.getFormatted()))).queue();
+            }, throwable -> {
+                if (throwableConsumer != null) throwableConsumer.accept(throwable);
+                else throwable.printStackTrace();
             });
         } else {
             ReplyCallbackAction replyCallbackAction = ctx.getCallback().reply(messageContent).setEphemeral(ephemeral);
@@ -154,13 +166,16 @@ public class ResponseBuilder {
                     c.applyTimeout(message);
                 }
                 if (!message.isEphemeral()) for (Emoji e: reactions) message.addReaction(Emoji.fromUnicode(Utils.adaptEmoji(e.getFormatted()))).queue();
+            }, throwable -> {
+                if (throwableConsumer != null) throwableConsumer.accept(throwable);
+                else throwable.printStackTrace();
             }));
         }
     }
 
-    private void channelContextSend(Consumer<Message> postMessageAction) {
+    private void channelContextSend() {
         if (messageToBeEdited != null) {
-            editMessage(postMessageAction);
+            editMessage();
             return;
         }
 
@@ -170,6 +185,7 @@ public class ResponseBuilder {
         int deleteAfter = (responseObject.has("delete_after")) ? responseObject.get("delete_after").getAsInt() : 0;
         String messageContent = getMessage();
         EmbedBuilder embedBuilder = getEmbed();
+        if (messageContent.isEmpty() && embedBuilder == null) return;
         List<Emoji> reactions = getReactions();
 
         List<RuntimeComponent> components = getRuntimeComponents();
@@ -189,15 +205,19 @@ public class ResponseBuilder {
                 c.applyTimeout(message);
             }
             for (Emoji e: reactions) message.addReaction(Emoji.fromUnicode(Utils.adaptEmoji(e.getFormatted()))).queue();
+        }, throwable -> {
+            if (throwableConsumer != null) throwableConsumer.accept(throwable);
+            else throwable.printStackTrace();
         });
     }
 
-    private void editMessage(Consumer<Message> postMessageAction) {
+    private void editMessage() {
         if (messageToBeEdited.isEphemeral()) return;
         boolean pin = responseObject.has("pin") && responseObject.get("pin").getAsBoolean();
         int deleteAfter = (responseObject.has("delete_after")) ? responseObject.get("delete_after").getAsInt() : 0;
         String messageContent = getMessage();
         EmbedBuilder embedBuilder = getEmbed();
+        if (messageContent.isEmpty() && embedBuilder == null) return;
         List<Emoji> reactions = getReactions();
 
         List<RuntimeComponent> components = getRuntimeComponents();
@@ -217,13 +237,16 @@ public class ResponseBuilder {
                 c.applyTimeout(message);
             }
             for (Emoji e: reactions) message.addReaction(Emoji.fromUnicode(Utils.adaptEmoji(e.getFormatted()))).queue();
+        }, throwable -> {
+            if (throwableConsumer != null) throwableConsumer.accept(throwable);
+            else throwable.printStackTrace();
         });
     }
 
     private String getMessage() {
         if (!responseObject.has("message")) return "";
         String message = DiscordBot.getInstance().applyPlaceholders(map, responseObject.get("message").getAsString());
-        if (message.length() > 2000) message = message.substring(0, 1996) + DiscordBot.getInstance().getTruncationIndicator();
+        if (message.length() > 2000) message = message.substring(0, 1996) + "...";
         return message;
     }
 
@@ -231,7 +254,7 @@ public class ResponseBuilder {
     private EmbedBuilder getEmbed() {
         if (!responseObject.has("description") && !responseObject.has("title")) return null;
         DiscordBot instance = DiscordBot.getInstance();
-        String indicator = instance.getTruncationIndicator();
+        String indicator = "...";
         String title = (responseObject.has("title")) ? instance.applyPlaceholders(map, responseObject.get("title").getAsString()) : "";
         String titleUrl = (responseObject.has("title_url")) ? instance.applyPlaceholders(map, responseObject.get("title_url").getAsString()) : "";
         String description = (responseObject.has("description")) ? instance.applyPlaceholders(map, responseObject.get("description").getAsString()) : "";
@@ -330,7 +353,7 @@ public class ResponseBuilder {
                     componentBonus,
                     (requiresAppearanceOverriding) ? ComponentUtils.createComponent(componentName, e.getAsJsonObject()) : null,
                     (requiresRowOverriding) ? e.getAsJsonObject().get("row_index").getAsInt() : basicComponentHandler.getRowIndex(),
-                    consumer
+                    componentConsumer
             );
             runtimeComponents.add(runtimeComponent);
         }

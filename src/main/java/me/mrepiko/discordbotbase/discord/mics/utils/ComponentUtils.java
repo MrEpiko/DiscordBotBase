@@ -14,6 +14,7 @@ import net.dv8tion.jda.api.interactions.modals.Modal;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class ComponentUtils {
 
@@ -24,7 +25,7 @@ public class ComponentUtils {
     public static Button createButton(String name, JsonObject object) {
         Button button = Button.of(
                 ButtonStyle.valueOf(object.get("style").getAsString()),
-                name,
+                name + "." + new Random().nextInt(9999),
                 object.get("label").getAsString()
         );
         if (object.has("emoji")) button = button.withEmoji(Emoji.fromUnicode(Utils.adaptEmoji(object.get("emoji").getAsString())));
@@ -32,7 +33,7 @@ public class ComponentUtils {
     }
 
     public static StringSelectMenu createDropdown(String name, JsonObject object) {
-        StringSelectMenu.Builder menuBuilder = StringSelectMenu.create(name)
+        StringSelectMenu.Builder menuBuilder = StringSelectMenu.create(name + "." + new Random().nextInt(9999))
                 .setPlaceholder(object.get("placeholder").getAsString())
                 .setMinValues(object.get("min_options").getAsInt())
                 .setMaxValues(object.get("max_options").getAsInt());

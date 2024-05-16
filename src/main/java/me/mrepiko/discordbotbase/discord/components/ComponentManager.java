@@ -104,8 +104,9 @@ public class ComponentManager extends ListenerAdapter {
 
     @Override
     public void onButtonInteraction(@NotNull ButtonInteractionEvent event) {
-        RuntimeComponent runtimeComponent = getRuntimeComponent(event.getComponentId(), event.getMessageId());
-        ComponentHandler componentHandler = (runtimeComponent == null) ? getComponentHandler(event.getComponentId()) : runtimeComponent.getBasicComponentHandler();
+        String componentName = event.getComponentId().split("\\.")[0];
+        RuntimeComponent runtimeComponent = getRuntimeComponent(componentName, event.getMessageId());
+        ComponentHandler componentHandler = (runtimeComponent == null) ? getComponentHandler(componentName) : runtimeComponent.getBasicComponentHandler();
         if (!(componentHandler instanceof ButtonHandler buttonHandler)) return;
         ButtonContext ctx = new ButtonContext(event, runtimeComponent);
         PlaceholderMap map = new PlaceholderMap(ctx);
@@ -131,8 +132,9 @@ public class ComponentManager extends ListenerAdapter {
 
     @Override
     public void onStringSelectInteraction(@NotNull StringSelectInteractionEvent event) {
-        RuntimeComponent runtimeComponent = getRuntimeComponent(event.getComponentId(), event.getMessageId());
-        ComponentHandler componentHandler = (runtimeComponent == null) ? getComponentHandler(event.getComponentId()) : runtimeComponent.getBasicComponentHandler();
+        String componentName = event.getComponentId().split("\\.")[0];
+        RuntimeComponent runtimeComponent = getRuntimeComponent(componentName, event.getMessageId());
+        ComponentHandler componentHandler = (runtimeComponent == null) ? getComponentHandler(componentName) : runtimeComponent.getBasicComponentHandler();
         if (!(componentHandler instanceof DropdownHandler dropdownHandler)) return;
         DropdownContext ctx = new DropdownContext(event, runtimeComponent);
         PlaceholderMap map = new PlaceholderMap(ctx);
