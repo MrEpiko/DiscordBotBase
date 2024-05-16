@@ -55,7 +55,7 @@ public class ComponentUtils {
     }
 
     public static Modal createModal(String name, JsonObject object) {
-        Modal.Builder modalBuilder = Modal.create(name, object.get("title").getAsString());
+        Modal.Builder modalBuilder = Modal.create(name + "." + new Random().nextInt(9999), object.get("title").getAsString());
         List<ActionRow> fields = new ArrayList<>();
         for (JsonElement e: object.get("fields").getAsJsonArray()) {
             JsonObject o = e.getAsJsonObject();

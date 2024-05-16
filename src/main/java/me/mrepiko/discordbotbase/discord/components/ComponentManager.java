@@ -93,7 +93,9 @@ public class ComponentManager extends ListenerAdapter {
 
     @Nullable
     private Modal getModal(String modalId, String messageId) {
-        return modals.getOrDefault(modalId, new HashMap<>()).getOrDefault(messageId, null);
+        Modal modal = modals.getOrDefault(modalId, new HashMap<>()).getOrDefault(messageId, null);
+        if (modal != null) modals.get(modalId).remove(messageId);
+        return modal;
     }
 
     public void addModal(Modal modal, String messageId) {
@@ -160,8 +162,8 @@ public class ComponentManager extends ListenerAdapter {
 
     @Override
     public void onModalInteraction(@NotNull ModalInteractionEvent event) {
-        Modal modal = getModal(event.getModalId(), event.getId());
-        ModalHandler modalHandler = (ModalHandler) getComponentHandler(event.getModalId());
+        Modal modal = getModal(event.getModalId(), (event.getMessage() == null) ? "" : event.getMessage().getId());
+        ModalHandler modalHandler = (ModalHandler) getComponentHandler(event.getModalId().split("\\.")[0]);
         if (modalHandler == null) return;
         ModalContext ctx = new ModalContext(event, modal);
         PlaceholderMap map = new PlaceholderMap(ctx);

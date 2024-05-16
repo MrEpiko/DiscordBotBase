@@ -112,7 +112,7 @@ public class ResponseBuilder {
         Modal modal = getModal();
         if (modal != null && ctx.getCallback() != null && (ctx.getCallback() instanceof IModalCallback iModalCallback)) {
             iModalCallback.replyModal(modal).queue();
-            DiscordBot.getInstance().getComponentManager().addModal(modal, ctx.getCallback().getId());
+            DiscordBot.getInstance().getComponentManager().addModal(modal, (ctx.getMessage() == null) ? "" : ctx.getMessage().getId());
             return;
         }
 
