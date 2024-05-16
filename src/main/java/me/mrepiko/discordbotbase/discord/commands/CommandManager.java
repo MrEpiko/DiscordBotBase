@@ -94,7 +94,10 @@ public class CommandManager extends ListenerAdapter {
             String name = e.getKey();
             boolean responseCommand = e.getValue();
             Command command = (responseCommand) ? new ResponseCommand(name) : getCommand(name);
-            if (command == null || command.getCommandConfig() == null || command.getParent() != null) continue;
+            if (command == null || command.getCommandConfig() == null || command.getParent() != null) {
+                commandsToBeRegistered.add(command);
+                continue;
+            }
             List<String> allCommandAppearances = new ArrayList<>(command.getAliases());
             allCommandAppearances.add(name);
             commandsToBeRegistered.add(command);
@@ -106,7 +109,7 @@ public class CommandManager extends ListenerAdapter {
                             .setGuildOnly(false)
                             .addOptions(command.getOptionDataList())
                             .setDefaultPermissions((command.isAdmin()) ? DefaultMemberPermissions.DISABLED : DefaultMemberPermissions.ENABLED);
-                    for (Command c: command.getChildren()) data.addSubcommands(new SubcommandData(c.getName().replace("_", "").replace(command.getName(), ""), c.getDescription()));
+                    for (Command c: command.getChildren()) data.addSubcommands(new SubcommandData(c.getName().replace("_", "").replace(command.getName(), ""), c.getDescription()).addOptions(c.getOptionDataList()));
                     commandDataList.add(data);
                 }
             } else {
@@ -117,7 +120,7 @@ public class CommandManager extends ListenerAdapter {
                                 .setGuildOnly(true)
                                 .addOptions(command.getOptionDataList())
                                 .setDefaultPermissions((command.isAdmin()) ? DefaultMemberPermissions.DISABLED : DefaultMemberPermissions.ENABLED);
-                        for (Command c: command.getChildren()) data.addSubcommands(new SubcommandData(c.getName().replace("_", "").replace(command.getName(), ""), c.getDescription()));
+                        for (Command c: command.getChildren()) data.addSubcommands(new SubcommandData(c.getName().replace("_", "").replace(command.getName(), ""), c.getDescription()).addOptions(c.getOptionDataList()));
                         commandDataList.add(data);
                     }
                 } else {
@@ -129,8 +132,7 @@ public class CommandManager extends ListenerAdapter {
                                     .setGuildOnly(true)
                                     .addOptions(command.getOptionDataList())
                                     .setDefaultPermissions((command.isAdmin()) ? DefaultMemberPermissions.DISABLED : DefaultMemberPermissions.ENABLED);
-                            for (Command c : command.getChildren())
-                                data.addSubcommands(new SubcommandData(c.getName().replace("_", "").replace(command.getName(), ""), c.getDescription()));
+                            for (Command c : command.getChildren()) data.addSubcommands(new SubcommandData(c.getName().replace("_", "").replace(command.getName(), ""), c.getDescription()).addOptions(c.getOptionDataList()));
                             previousCommands.add(data);
                         }
                         guildSpecificCommands.put(guildId, previousCommands);
