@@ -3,6 +3,7 @@ package me.mrepiko.discordbotbase.discord.components.general;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.Getter;
+import lombok.Setter;
 import me.mrepiko.discordbotbase.common.config.Config;
 import me.mrepiko.discordbotbase.discord.DiscordBot;
 import me.mrepiko.discordbotbase.discord.mics.Constants;
@@ -23,7 +24,7 @@ public class ComponentHandler  {
     protected Config componentConfig;
     protected double cooldown;
 
-    protected boolean enabled;
+    @Setter protected boolean enabled = true;
     protected boolean admin;
     protected boolean defer;
     protected boolean ephemeralDefer;

@@ -179,21 +179,20 @@ public class ComponentManager extends ListenerAdapter {
         DiscordBot instance = DiscordBot.getInstance();
         User user = map.getCtx().getUser();
         if (user == null) return false;
-        JsonObject errorHandlersObject = instance.getConfig().get("error_handlers").getAsJsonObject().get("components").getAsJsonObject();
 
         if (!componentHandler.isEnabled()) {
-            ResponseBuilder.build(map, errorHandlersObject.get("disabled").getAsJsonObject()).send();
+            ResponseBuilder.build(map, componentHandler.getErrorHandlers().get("disabled")).send();
             return false;
         }
         if (componentHandler.isAdmin() && !instance.getAdmins().contains(user.getId())) {
-            ResponseBuilder.build(map, errorHandlersObject.get("reserved_for_admin").getAsJsonObject()).send();
+            ResponseBuilder.build(map, componentHandler.getErrorHandlers().get("reserved_for_admin")).send();
             return false;
         }
         Long currentCooldown = componentHandler.getCooldowns().getOrDefault(user.getId(), 0L);
         if (currentCooldown > 0) {
             if (System.currentTimeMillis() - currentCooldown < componentHandler.getCooldown() * 1000) {
                 map.put("cooldown_time_left", String.valueOf(Math.round((double) currentCooldown / 1000 + componentHandler.getCooldown() - (double) System.currentTimeMillis() / 1000)));
-                ResponseBuilder.build(map, errorHandlersObject.get("cooldown").getAsJsonObject()).send();
+                ResponseBuilder.build(map, componentHandler.getErrorHandlers().get("cooldown")).send();
                 return false;
             } else componentHandler.getCooldowns().remove(user.getId());
         }
@@ -206,16 +205,16 @@ public class ComponentManager extends ListenerAdapter {
                 }
             }
             if (!hasRole) {
-                ResponseBuilder.build(map, errorHandlersObject.get("reserved_for_role").getAsJsonObject()).send();
+                ResponseBuilder.build(map, componentHandler.getErrorHandlers().get("reserved_for_role")).send();
                 return false;
             }
         }
         if (!componentHandler.getRequiredUsers().isEmpty() && !componentHandler.getRequiredUsers().contains(user.getId())) {
-            ResponseBuilder.build(map, errorHandlersObject.get("reserved_for_user").getAsJsonObject()).send();
+            ResponseBuilder.build(map, componentHandler.getErrorHandlers().get("reserved_for_user")).send();
             return false;
         }
         if (map.getCtx().getGuild() != null && map.getCtx().getChannel() != null && !componentHandler.getRequiredChannels().isEmpty() && !componentHandler.getRequiredChannels().contains(map.getCtx().getChannel().getId())) {
-            ResponseBuilder.build(map, errorHandlersObject.get("reserved_for_channel").getAsJsonObject()).send();
+            ResponseBuilder.build(map, componentHandler.getErrorHandlers().get("reserved_for_channel")).send();
             return false;
         }
         Member member = map.getCtx().getMember();

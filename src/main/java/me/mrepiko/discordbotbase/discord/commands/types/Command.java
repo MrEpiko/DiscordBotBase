@@ -39,7 +39,7 @@ public abstract class Command {
     private final List<String> guilds = new ArrayList<>();
 
     private boolean admin;
-    private boolean enabled;
+    @Setter private boolean enabled = true;
     private boolean global;
     private boolean defer;
     private boolean ephemeralDefer;
