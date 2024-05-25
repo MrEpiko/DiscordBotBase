@@ -4,6 +4,7 @@ import me.mrepiko.discordbotbase.discord.modules.Module;
 import me.mrepiko.discordbotbase.discord.tasks.Task;
 
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 public class ShowcaseTaskModule extends Module {
 
@@ -13,12 +14,7 @@ public class ShowcaseTaskModule extends Module {
 
     @Override
     public void onEnable() {
-        registerTask(new Task("showcase_task", 5000L, 1000L * 10, new TimerTask() {
-            @Override
-            public void run() {
-                System.out.println("Hey this is a showcase of task module!");
-            }
-        }));
+        registerTask(new Task("showcase_task", 5, 10, TimeUnit.SECONDS, () -> System.out.println("Hey this is a showcase of task module!")));
     }
 
 }

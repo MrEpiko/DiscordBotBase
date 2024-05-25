@@ -2,14 +2,19 @@ package me.mrepiko.discordbotbase.discord.tasks;
 
 import lombok.Getter;
 
+import java.sql.Time;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @Getter
 public class TaskManager {
 
     private final HashMap<String, Task> tasks = new HashMap<>();
+    private final ScheduledExecutorService service = new ScheduledThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2);
 
     public void addTask(Task task) {
         if (tasks.containsKey(task.getId()) || task.getDelay() < 5000) return;
@@ -20,14 +25,11 @@ public class TaskManager {
         Task task = tasks.getOrDefault(id, null);
         if (task == null) return;
         if (task.getTaskType() == Task.Type.SCHEDULED) {
-            task.getTimer().schedule(task.getTimerTask(), task.getDelay());
-            new Timer().schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    tasks.remove(task.getId());
-                }
-            }, task.getDelay() + 2000);
-        } else task.getTimer().scheduleAtFixedRate(task.getTimerTask(), task.getDelay(), task.getPeriod());
+            long delay = service.schedule(task.getRunnable(), task.getDelay(), task.getTimeUnit()).getDelay(TimeUnit.MILLISECONDS);
+            service.schedule(() -> {
+                tasks.remove(task.getId());
+            }, delay + 2000, TimeUnit.MILLISECONDS);
+        } else service.scheduleAtFixedRate(task.getRunnable(), task.getDelay(), task.getPeriod(), task.getTimeUnit());
         task.setStartedAtTimestamp(System.currentTimeMillis() / 1000);
     }
 
