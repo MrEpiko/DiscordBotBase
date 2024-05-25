@@ -16,14 +16,13 @@ public class Task {
     private final Type taskType;
     private final long delay;
     private final long period;
-    private final TimeUnit timeUnit;
 
     private final Runnable runnable;
 
     @Setter private long startedAtTimestamp;
 
-    public Task(String id, long delay, long period, TimeUnit timeUnit, Runnable runnable) {
-        this(id, Type.SCHEDULED_AT_FIXED_RATE, delay, period, timeUnit, runnable);
+    public Task(String id, long delay, long period, Runnable runnable) {
+        this(id, Type.SCHEDULED_AT_FIXED_RATE, delay, period, runnable);
     }
 
     public enum Type {
