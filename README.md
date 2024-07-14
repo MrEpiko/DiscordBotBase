@@ -13,12 +13,13 @@ DiscordBotBase is a Java project utilizing JDA, designed to empower users in cre
     - [Dropdown component structure](#dropdown-component-structure)
     - [Modal component structure](#modal-component-structure)
 5. [Modules](#modules)
-6. [ResponseBuilder](#responsebuilder)
+6. [PlaceholderMap](#placeholdermap)
+7. [ResponseBuilder](#responsebuilder)
     - [Response structure](#response-structure)
     - [Component row overriding](#component-row-overriding)
     - [Component appearance overriding](#component-appearance-overriding)
-7. [EventWaiter](#eventwaiter)
-8. [License](#license)
+8. [EventWaiter](#eventwaiter)
+9. [License](#license)
 
 ## Getting started
 1. Clone the `DiscordBotBase` repository to your local machine.
@@ -186,6 +187,17 @@ Components include buttons (`ButtonHandler`), dropdowns (`DropdownHandler`) and 
 ## Modules
 Modules can be enabled from the main configuration file. Each module extends the `Module` class and can register listeners, tasks, both or none. Modules must be registered through `ModuleManager#registerModules()`. Listener modules should use the `registerListener()` method within the `onEnable()` method to register listeners to JDA. Task modules, on the other hand, contain tasks that are repeated at intervals. Use the `registerTask()` method to register tasks.
 
+## PlaceholderMap
+`PlaceholderMap` is an object in which different placeholders can be placed. This object accepts a variety of different objects, ranging from primitive types and all numbers to JDA types such as `User`, `Message`, `Channel`, etc.
+
+Below is an example of applying placeholders to a string:
+```java
+PlaceholderMap map = new PlaceholderMap(ctx);
+map.put("color", "red");
+String input = "Hello {ctx_user_mention}, apple has {color} color! Here is also uppercase version in case you need it: {color_upper}...";
+System.out.println("Applied placeholders: " + map.applyPlaceholders(input));
+```
+
 ## ResponseBuilder
 The `ResponseBuilder` class handles interactions with users, sending responses in the form of messages or modals. Use the `ResponseBuilder#build()` method to begin response creation process. Once your response has been created, use `#send()` in order to send it. 
 
@@ -214,7 +226,7 @@ Two values that are worth explaining are `bonus` and `consumer`:
         {
           "name": "",
           "value": "",
-          "blank": true,
+          "blank": false,
           "inline": false
         }
     ],
@@ -222,8 +234,21 @@ Two values that are worth explaining are `bonus` and `consumer`:
     "modal": "",
     "delete_after": 0,
     "ephemeral": false,
-    "pin": false
+    "pin": false,
+    "crosspost": false 
   }
+}
+```
+In cases where a message is supposed to be edited, the placeholder map will automatically receive additional placeholders containing previous message data (including embed data). The response object will have the following additional properties:
+```json
+{
+   "response": {
+      "clear_old_message_content": true,
+      "clear_old_embed": true,
+      "clear_old_files": true,
+      "clear_old_components": true,
+      "clear_reactions": false
+   }
 }
 ```
 
@@ -263,7 +288,18 @@ Two values that are worth explaining are `bonus` and `consumer`:
 ```
 
 ## EventWaiter
+The `EventWaiter` class facilitates awaiting events within specific classes without necessitating the registration of separate listener classes. 
 
-The `EventWaiter` class facilitates awaiting events within specific classes without necessitating the registration of separate listener classes. To utilize it, simply acquire its instance from the main `DiscordBot` instance via `DiscordBot#getInstance()#getEventWaiter()`.
+Here's an example utilizing this feature in order to await for `MessageReceivedEvent`:
+
+```java
+DiscordBot.getInstance().getEventWaiter().waitForEvent(
+        MessageReceivedEvent.class, 
+        event -> event.getAuthor().getName().equalsIgnoreCase("mrepiko"),
+        event -> System.out.println("Hello MrEpiko, how are you today?"),
+        10,
+        () -> System.out.println("It seems like MrEpiko is not here :(")
+);
+```
 ## License
 This project is licensed under the [MIT license](LICENSE.md).

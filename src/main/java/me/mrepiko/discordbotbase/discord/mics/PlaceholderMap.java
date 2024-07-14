@@ -13,6 +13,7 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 @Getter
 public class PlaceholderMap {
@@ -28,15 +29,15 @@ public class PlaceholderMap {
         if (ctx.getMessage() != null) put("ctx_message", ctx.getMessage());
         if (ctx.getChannel() != null) put("ctx_channel", ctx.getChannel());
         DiscordBot instance = DiscordBot.getInstance();
-        put("bot_name", instance.getJda().getSelfUser().getName());
-        put("bot_id", instance.getJda().getSelfUser().getId());
-        put("current_time", LocalTime.now().format(DateTimeFormatter.ofPattern(instance.getTimeFormat())));
-        put("current_date", LocalDate.now().format(DateTimeFormatter.ofPattern(instance.getDateFormat())));
+        map.put("bot_name", instance.getJda().getSelfUser().getName());
+        map.put("bot_id", instance.getJda().getSelfUser().getId());
+        map.put("current_time", LocalTime.now().format(DateTimeFormatter.ofPattern(instance.getTimeFormat())));
+        map.put("current_date", LocalDate.now().format(DateTimeFormatter.ofPattern(instance.getDateFormat())));
         put("current_timestamp", System.currentTimeMillis() / 1000);
         put("current_timestamp_millis", System.currentTimeMillis());
         put("default_color", instance.getDefaultColor());
-        put("default_name", instance.getDefaultName());
-        put("default_icon_url", instance.getDefaultIconUrl());
+        map.put("default_name", instance.getDefaultName());
+        map.put("default_icon_url", instance.getDefaultIconUrl());
         if (instance.getDeveloperChannel() != null) put("developer_channel", instance.getDeveloperChannel());
         if (instance.getDeveloperGuild() != null) put("developer_guild", instance.getDeveloperGuild());
     }
@@ -49,7 +50,7 @@ public class PlaceholderMap {
     public void put(String identifier, String input) {
         map.put(identifier, input);
         map.put(identifier + "_lower", (input == null) ? "null" : input.toLowerCase(Locale.ROOT));
-        map.put(identifier + "_upper", (input == null) ? "NULL": input.toUpperCase(Locale.ROOT));
+        map.put(identifier + "_upper", (input == null) ? "NULL" : input.toUpperCase(Locale.ROOT));
     }
 
     public void put(String identifier, Number number) {
@@ -61,7 +62,7 @@ public class PlaceholderMap {
     }
 
     public void put(String identifier, Color color) {
-        put(identifier, String.format("#%06x", color.getRGB() & 0x00FFFFFF));
+        map.put(identifier, String.format("#%06x", color.getRGB() & 0x00FFFFFF));
     }
 
     public void put(String identifier, int number, boolean formatMedals) {
@@ -134,9 +135,38 @@ public class PlaceholderMap {
         put(identifier + "_author", message.getAuthor());
     }
 
+    public void put(String identifier, MessageEmbed messageEmbed) {
+        map.put(identifier + "_title", messageEmbed.getTitle());
+        map.put(identifier + "_description", messageEmbed.getDescription());
+        map.put(identifier + "_image_url", (messageEmbed.getImage() == null) ? "" : messageEmbed.getImage().getUrl());
+        map.put(identifier + "_thumbnail_url", (messageEmbed.getThumbnail() == null) ? "" : messageEmbed.getThumbnail().getUrl());
+        map.put(identifier + "_footer_icon_url", (messageEmbed.getFooter() == null) ? "" : messageEmbed.getFooter().getIconUrl());
+        map.put(identifier + "_author_icon_url", (messageEmbed.getAuthor() == null) ? "" : messageEmbed.getAuthor().getIconUrl());
+        if (messageEmbed.getColor() != null) put(identifier + "_color", messageEmbed.getColor());
+        else map.put(identifier + "_color", "#000000");
+        map.put(identifier + "_url", messageEmbed.getUrl());
+        map.put(identifier + "_author_text", messageEmbed.getAuthor().getName());
+        map.put(identifier + "_author_url", messageEmbed.getAuthor().getUrl());
+        map.put(identifier + "_footer_text", messageEmbed.getFooter().getText());
+        if (messageEmbed.getTimestamp() != null) put(identifier + "_timestamp", messageEmbed.getTimestamp());
+        else {
+            map.put(identifier + "_date", "");
+            map.put(identifier + "_time", "");
+            put(identifier + "_seconds", 0);
+            put(identifier + "_milliseconds", 0);
+        }
+    }
+
     public void put(String identifier, OffsetDateTime offsetDateTime) {
         map.put(identifier + "_date", offsetDateTime.format(DateTimeFormatter.ofPattern(DiscordBot.getInstance().getDateFormat())));
         map.put(identifier + "_time", offsetDateTime.format(DateTimeFormatter.ofPattern(DiscordBot.getInstance().getTimeFormat())));
+        put(identifier + "_seconds", offsetDateTime.toInstant().getEpochSecond());
+        put(identifier + "_milliseconds", offsetDateTime.toInstant().getEpochSecond() * 1000);
+    }
+
+    public String applyPlaceholders(String string) {
+        for (Map.Entry<String, String> e: map.entrySet()) string = string.replace("{" + e.getKey() + "}", (e.getValue() == null) ? "null" : e.getValue());
+        return string;
     }
 
 }

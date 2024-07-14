@@ -128,12 +128,6 @@ public class DiscordBot {
         commandManager.reload();
         componentManager.reload();
     }
-
-    public String applyPlaceholders(PlaceholderMap map, String string) {
-        for (Map.Entry<String, String> e: map.getMap().entrySet()) string = string.replace("{" + e.getKey() + "}", (e.getValue() == null) ? "null" : e.getValue());
-        return string;
-    }
-
     public boolean isModuleEnabled(Class<? extends Module> moduleClass) {
         for (Module m: moduleManager.getModules()) {
             if (!m.getClass().equals(moduleClass)) continue;
@@ -141,6 +135,5 @@ public class DiscordBot {
         }
         return false;
     }
-
 
 }

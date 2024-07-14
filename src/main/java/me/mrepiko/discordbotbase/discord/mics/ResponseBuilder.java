@@ -16,7 +16,9 @@ import me.mrepiko.discordbotbase.discord.mics.utils.ComponentUtils;
 import me.mrepiko.discordbotbase.discord.mics.utils.Utils;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.interactions.callbacks.IModalCallback;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.modals.Modal;
@@ -118,6 +120,7 @@ public class ResponseBuilder {
 
         boolean ephemeral = responseObject.has("ephemeral") && responseObject.get("ephemeral").getAsBoolean();
         boolean pin = responseObject.has("pin") && responseObject.get("pin").getAsBoolean();
+        boolean crosspost = responseObject.has("crosspost") && responseObject.get("crosspost").getAsBoolean();
         int deleteAfter = (responseObject.has("delete_after")) ? responseObject.get("delete_after").getAsInt() : 0;
         String messageContent = getMessage();
         EmbedBuilder embedBuilder = getEmbed();
@@ -140,6 +143,7 @@ public class ResponseBuilder {
                     if (message.isEphemeral()) ctx.getCallback().getHook().deleteOriginal().queueAfter(deleteAfter, TimeUnit.SECONDS);
                     else message.delete().queueAfter(deleteAfter, TimeUnit.SECONDS);
                 }
+                if (crosspost) message.crosspost().queue();
                 for (RuntimeComponent c: components) {
                     c.setMessageId(message.getId());
                     c.applyTimeout(message);
@@ -183,6 +187,7 @@ public class ResponseBuilder {
         if (ctx.getChannel() == null) return;
         boolean pin = responseObject.has("pin") && responseObject.get("pin").getAsBoolean();
         int deleteAfter = (responseObject.has("delete_after")) ? responseObject.get("delete_after").getAsInt() : 0;
+        boolean crosspost = responseObject.has("crosspost") && responseObject.get("crosspost").getAsBoolean();
         String messageContent = getMessage();
         EmbedBuilder embedBuilder = getEmbed();
         if (messageContent.isEmpty() && embedBuilder == null) return;
@@ -200,6 +205,7 @@ public class ResponseBuilder {
             if (postMessageAction != null) postMessageAction.accept(message);
             if (pin) message.pin().queue();
             if (deleteAfter > 0) message.delete().queueAfter(deleteAfter, TimeUnit.SECONDS);
+            if (crosspost) message.crosspost().queue();
             for (RuntimeComponent c: components) {
                 c.setMessageId(message.getId());
                 c.applyTimeout(message);
@@ -213,8 +219,16 @@ public class ResponseBuilder {
 
     private void editMessage() {
         if (messageToBeEdited.isEphemeral()) return;
+        map.put("old_message", messageToBeEdited);
+        if (!messageToBeEdited.getEmbeds().isEmpty()) map.put("old_message_embed", messageToBeEdited.getEmbeds().get(0));
         boolean pin = responseObject.has("pin") && responseObject.get("pin").getAsBoolean();
         int deleteAfter = (responseObject.has("delete_after")) ? responseObject.get("delete_after").getAsInt() : 0;
+        boolean crosspost = responseObject.has("crosspost") && responseObject.get("crosspost").getAsBoolean();
+        boolean clearMessageContent = !responseObject.has("clear_old_message_content") || responseObject.get("clear_old_message_content").getAsBoolean();
+        boolean clearEmbed = !responseObject.has("clear_old_embed") || responseObject.get("clear_old_embed").getAsBoolean();
+        boolean clearFiles = !responseObject.has("clear_old_files") || responseObject.get("clear_old_files").getAsBoolean();
+        boolean clearComponents = !responseObject.has("clear_old_components") || responseObject.get("clear_old_components").getAsBoolean();
+        boolean clearReactions = responseObject.has("clear_reactions") && responseObject.get("clear_reactions").getAsBoolean();
         String messageContent = getMessage();
         EmbedBuilder embedBuilder = getEmbed();
         if (messageContent.isEmpty() && embedBuilder == null) return;
@@ -225,18 +239,25 @@ public class ResponseBuilder {
         List<ActionRow> actionRows = sortIntoActionRows(components);
 
         MessageEditAction messageEditAction = messageToBeEdited.editMessage(messageContent);
+        if (messageContent.isEmpty() && !clearMessageContent) messageEditAction.setContent(messageToBeEdited.getContentRaw());
         if (embedBuilder != null) messageEditAction.setEmbeds(embedBuilder.build());
+        else if (!clearEmbed) messageEditAction.setEmbeds(messageToBeEdited.getEmbeds());
         if (!actionRows.isEmpty()) messageEditAction.setComponents(actionRows);
+        else if (!clearComponents) messageEditAction.setComponents(messageToBeEdited.getComponents());
         if (!files.isEmpty()) messageEditAction.setFiles(files.stream().map(FileUpload::fromData).toList());
+        else if (!clearFiles) messageEditAction.setContent(messageToBeEdited.getContentRaw());
         messageEditAction.queue(message -> {
             if (postMessageAction != null) postMessageAction.accept(message);
             if (pin) message.pin().queue();
             if (deleteAfter > 0) message.delete().queueAfter(deleteAfter, TimeUnit.SECONDS);
+            if (crosspost) message.crosspost().queue();
             for (RuntimeComponent c: components) {
                 c.setMessageId(message.getId());
                 c.applyTimeout(message);
             }
-            for (Emoji e: reactions) message.addReaction(Emoji.fromUnicode(Utils.adaptEmoji(e.getFormatted()))).queue();
+            if (clearReactions) message.clearReactions().queue(x -> {
+                for (Emoji e: reactions) message.addReaction(Emoji.fromUnicode(Utils.adaptEmoji(e.getFormatted()))).queue();
+            });
         }, throwable -> {
             if (throwableConsumer != null) throwableConsumer.accept(throwable);
             else throwable.printStackTrace();
@@ -245,7 +266,7 @@ public class ResponseBuilder {
 
     private String getMessage() {
         if (!responseObject.has("message")) return "";
-        String message = DiscordBot.getInstance().applyPlaceholders(map, responseObject.get("message").getAsString());
+        String message = map.applyPlaceholders(responseObject.get("message").getAsString());
         if (message.length() > 2000) message = message.substring(0, 1996) + "...";
         return message;
     }
@@ -253,20 +274,19 @@ public class ResponseBuilder {
     @Nullable
     private EmbedBuilder getEmbed() {
         if (!responseObject.has("description") && !responseObject.has("title")) return null;
-        DiscordBot instance = DiscordBot.getInstance();
         String indicator = "...";
-        String title = (responseObject.has("title")) ? instance.applyPlaceholders(map, responseObject.get("title").getAsString()) : "";
-        String titleUrl = (responseObject.has("title_url")) ? instance.applyPlaceholders(map, responseObject.get("title_url").getAsString()) : "";
-        String description = (responseObject.has("description")) ? instance.applyPlaceholders(map, responseObject.get("description").getAsString()) : "";
-        String footerText = (responseObject.has("footer_text")) ? instance.applyPlaceholders(map, responseObject.get("footer_text").getAsString()) : "";
-        String authorText = (responseObject.has("author_text")) ? instance.applyPlaceholders(map, responseObject.get("author_text").getAsString()) : "";
-        String footerIconUrl = (responseObject.has("footer_icon_url")) ? instance.applyPlaceholders(map, responseObject.get("footer_icon_url").getAsString()) : "";
-        String authorIconUrl = (responseObject.has("author_icon_url")) ? instance.applyPlaceholders(map, responseObject.get("author_icon_url").getAsString()) : "";
-        String authorUrl = (responseObject.has("author_url")) ? instance.applyPlaceholders(map, responseObject.get("author_url").getAsString()) : "";
-        String timestamp = (responseObject.has("timestamp")) ? instance.applyPlaceholders(map, responseObject.get("timestamp").getAsString()) : "";
-        String thumbnailUrl = (responseObject.has("thumbnail_url")) ? instance.applyPlaceholders(map, responseObject.get("thumbnail_url").getAsString()) : "";
-        String imageUrl = (responseObject.has("image_url")) ? instance.applyPlaceholders(map, responseObject.get("image_url").getAsString()) : "";
-        String color = (responseObject.has("color")) ? instance.applyPlaceholders(map, responseObject.get("color").getAsString()) : "";
+        String title = (responseObject.has("title")) ? map.applyPlaceholders(responseObject.get("title").getAsString()) : "";
+        String titleUrl = (responseObject.has("title_url")) ? map.applyPlaceholders(responseObject.get("title_url").getAsString()) : "";
+        String description = (responseObject.has("description")) ? map.applyPlaceholders(responseObject.get("description").getAsString()) : "";
+        String footerText = (responseObject.has("footer_text")) ? map.applyPlaceholders(responseObject.get("footer_text").getAsString()) : "";
+        String authorText = (responseObject.has("author_text")) ? map.applyPlaceholders(responseObject.get("author_text").getAsString()) : "";
+        String footerIconUrl = (responseObject.has("footer_icon_url")) ? map.applyPlaceholders(responseObject.get("footer_icon_url").getAsString()) : "";
+        String authorIconUrl = (responseObject.has("author_icon_url")) ? map.applyPlaceholders(responseObject.get("author_icon_url").getAsString()) : "";
+        String authorUrl = (responseObject.has("author_url")) ? map.applyPlaceholders(responseObject.get("author_url").getAsString()) : "";
+        String timestamp = (responseObject.has("timestamp")) ? map.applyPlaceholders(responseObject.get("timestamp").getAsString()) : "";
+        String thumbnailUrl = (responseObject.has("thumbnail_url")) ? map.applyPlaceholders(responseObject.get("thumbnail_url").getAsString()) : "";
+        String imageUrl = (responseObject.has("image_url")) ? map.applyPlaceholders(responseObject.get("image_url").getAsString()) : "";
+        String color = (responseObject.has("color")) ? map.applyPlaceholders(responseObject.get("color").getAsString()) : "";
         JsonArray fields = (responseObject.has("fields")) ? responseObject.get("fields").getAsJsonArray() : new JsonArray();
 
         EmbedBuilder embedBuilder = new EmbedBuilder();
@@ -315,8 +335,8 @@ public class ResponseBuilder {
                 embedBuilder.addBlankField(inline);
                 continue;
             }
-            String name = instance.applyPlaceholders(map, o.get("name").getAsString());
-            String value = instance.applyPlaceholders(map, o.get("value").getAsString());
+            String name = map.applyPlaceholders(o.get("name").getAsString());
+            String value = map.applyPlaceholders(o.get("value").getAsString());
             if (name.length() > 256) name = name.substring(0, 252) + indicator;
             if (value.length() > 1024) value = value.substring(0, 1020) + indicator;
             embedBuilder.addField(name, value, inline);
