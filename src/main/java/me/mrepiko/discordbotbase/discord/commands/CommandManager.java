@@ -18,6 +18,7 @@ import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInterac
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
@@ -107,9 +108,9 @@ public class CommandManager extends ListenerAdapter {
                     if (command.isHideOriginalName() && a.equalsIgnoreCase(name)) continue;
                     SlashCommandData data = Commands.slash(a, command.getDescription())
                             .setGuildOnly(false)
-                            .addOptions(command.getOptionDataList())
+                            .addOptions(command.getOptionsList().stream().map(Command.Option::getOptionData).toList())
                             .setDefaultPermissions((command.isAdmin()) ? DefaultMemberPermissions.DISABLED : DefaultMemberPermissions.ENABLED);
-                    for (Command c: command.getChildren()) data.addSubcommands(new SubcommandData(c.getName().replace("_", "").replace(command.getName(), ""), c.getDescription()).addOptions(c.getOptionDataList()));
+                    for (Command c: command.getChildren()) data.addSubcommands(new SubcommandData(c.getName().replace("_", "").replace(command.getName(), ""), c.getDescription()).addOptions(c.getOptionsList().stream().map(Command.Option::getOptionData).toList()));
                     commandDataList.add(data);
                 }
             } else {
@@ -118,9 +119,9 @@ public class CommandManager extends ListenerAdapter {
                         if (command.isHideOriginalName() && a.equalsIgnoreCase(name)) continue;
                         SlashCommandData data = Commands.slash(a, command.getDescription())
                                 .setGuildOnly(true)
-                                .addOptions(command.getOptionDataList())
+                                .addOptions(command.getOptionsList().stream().map(Command.Option::getOptionData).toList())
                                 .setDefaultPermissions((command.isAdmin()) ? DefaultMemberPermissions.DISABLED : DefaultMemberPermissions.ENABLED);
-                        for (Command c: command.getChildren()) data.addSubcommands(new SubcommandData(c.getName().replace("_", "").replace(command.getName(), ""), c.getDescription()).addOptions(c.getOptionDataList()));
+                        for (Command c: command.getChildren()) data.addSubcommands(new SubcommandData(c.getName().replace("_", "").replace(command.getName(), ""), c.getDescription()).addOptions(c.getOptionsList().stream().map(Command.Option::getOptionData).toList()));
                         commandDataList.add(data);
                     }
                 } else {
@@ -130,9 +131,9 @@ public class CommandManager extends ListenerAdapter {
                             if (command.isHideOriginalName() && a.equalsIgnoreCase(name)) continue;
                             SlashCommandData data = Commands.slash(a, command.getDescription())
                                     .setGuildOnly(true)
-                                    .addOptions(command.getOptionDataList())
+                                    .addOptions(command.getOptionsList().stream().map(Command.Option::getOptionData).toList())
                                     .setDefaultPermissions((command.isAdmin()) ? DefaultMemberPermissions.DISABLED : DefaultMemberPermissions.ENABLED);
-                            for (Command c : command.getChildren()) data.addSubcommands(new SubcommandData(c.getName().replace("_", "").replace(command.getName(), ""), c.getDescription()).addOptions(c.getOptionDataList()));
+                            for (Command c : command.getChildren()) data.addSubcommands(new SubcommandData(c.getName().replace("_", "").replace(command.getName(), ""), c.getDescription()).addOptions(c.getOptionsList().stream().map(Command.Option::getOptionData).toList()));
                             previousCommands.add(data);
                         }
                         guildSpecificCommands.put(guildId, previousCommands);
@@ -223,6 +224,51 @@ public class CommandManager extends ListenerAdapter {
         if (event.getMember() != null && !command.getRequiredChannelPermissions().isEmpty() && !event.getMember().hasPermission((GuildMessageChannel) event.getChannel(), command.getRequiredChannelPermissions())) {
             ResponseBuilder.build(map, command.getErrorHandlers().get("missing_channel_permissions")).send();
             return;
+        }
+
+        for (Command.Option option: command.getOptionsList()) {
+            for (OptionMapping optionMapping : event.getOptions()) {
+                if (option.getOptionData().getName().equalsIgnoreCase(optionMapping.getName())) {
+                    map.put("option", option.getOptionData().getName());
+                    if (!option.isEnabled()) {
+                        ResponseBuilder.build(map, option.getErrorHandlers().get("disabled")).send();
+                        return;
+                    }
+                    if (option.isAdmin() && !instance.getAdmins().contains(user.getId())) {
+                        ResponseBuilder.build(map, option.getErrorHandlers().get("reserved_for_admin")).send();
+                        return;
+                    }
+                    if (event.getMember() != null && !option.getRequiredRoles().isEmpty()) {
+                        boolean hasRole = false;
+                        for (Role r: event.getMember().getRoles()) {
+                            if (option.getRequiredRoles().contains(r.getId())) {
+                                hasRole = true;
+                                break;
+                            }
+                        }
+                        if (!hasRole) {
+                            ResponseBuilder.build(map, option.getErrorHandlers().get("reserved_for_role")).send();
+                            return;
+                        }
+                    }
+                    if (!option.getRequiredUsers().isEmpty() && !option.getRequiredUsers().contains(user.getId())) {
+                        ResponseBuilder.build(map, option.getErrorHandlers().get("reserved_for_user")).send();
+                        return;
+                    }
+                    if (event.isFromGuild() && !option.getRequiredChannels().isEmpty() && !option.getRequiredChannels().contains(event.getChannelId())) {
+                        ResponseBuilder.build(map, option.getErrorHandlers().get("reserved_for_channel")).send();
+                        return;
+                    }
+                    if (event.getMember() != null && !option.getRequiredPermissions().isEmpty() && !event.getMember().hasPermission(option.getRequiredPermissions())) {
+                        ResponseBuilder.build(map, option.getErrorHandlers().get("missing_permissions")).send();
+                        return;
+                    }
+                    if (event.getMember() != null && !option.getRequiredChannelPermissions().isEmpty() && !event.getMember().hasPermission((GuildMessageChannel) event.getChannel(), command.getRequiredChannelPermissions())) {
+                        ResponseBuilder.build(map, option.getErrorHandlers().get("missing_channel_permissions")).send();
+                        return;
+                    }
+                }
+            }
         }
 
         if (command.getCooldown() > 0) command.getCooldowns().put(user.getId(), System.currentTimeMillis());

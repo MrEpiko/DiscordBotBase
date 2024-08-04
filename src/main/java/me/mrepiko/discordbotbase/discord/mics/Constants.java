@@ -43,6 +43,22 @@ public class Constants {
                     "description": "N/A",
                     "required": false,
                     "autocomplete": false,
+                    "required_roles": [],
+                    "required_users": [],
+                    "required_channels": [],
+                    "required_permissions": [],
+                    "required_channel_permissions": [],
+                    "admin": false,
+                    "enabled": true,
+                    "error_handlers": {
+                        "reserved_for_role": {},
+                        "reserved_for_user": {},
+                        "reserved_for_channel": {},
+                        "reserved_for_admin": {},
+                        "missing_permissions": {},
+                        "missing_channel_permissions": {},
+                        "disabled": {}
+                    },
                     "choices": [
                       {
                         "name": "",
@@ -74,10 +90,11 @@ public class Constants {
                         "blank": true,
                         "inline": false
                     }
-                ]m
+                ],
                 "components": [""],
                 "modal": "",
                 "delete_after": 0,
+                "reactions": [],
                 "ephemeral": false,
                 "pin": false
               }

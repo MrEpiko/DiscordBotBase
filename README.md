@@ -33,51 +33,67 @@ The main configuration file (`configuration/config.json`) serves as the cornerst
 ## Commands
 To implement a command, create a class extending the `Command` class. Register the command in `CommandManager#registerCommands()`. Additionally, create a JSON file with the command's name in `configuration/commands`. Upon bot startup, this file will be filled with default JSON properties, which are self-explanatory. From here, you are free to customize the command's appearance and functionality.
 
-Command error handlers can be overridden upon configuring command's properties. If no overrides are provided, bot will respond with default error handlers (configured in `configuration/config.json`). Same principle is later applied to component handlers. 
+Command error handlers can be overridden upon configuring command's properties. If no overrides are provided, bot will respond with default error handlers (configured in `configuration/config.json`). Same principle is later applied to option & component handlers. 
 
 ### Command structure
 ```json
 {
-  "properties": {
-    "cooldown": 1,
-    "required_roles": [],
-    "required_users": [],
-    "required_channels": [], 
-    "required_permissions": [],
-    "required_channel_permissions": [],
-    "error_handlers": {
-      "cooldown": {},
-      "reserved_for_role": {}, 
-      "reserved_for_user": {},
-      "reserved_for_channel": {},
-      "reserved_for_admin": {},
-      "missing_permissions": {},
-      "missing_channel_permissions": {},
-      "disabled": {}
-    },
-    "description": "N/A",
-    "admin": false,
-    "aliases": [],
-    "global": false,
-    "guilds": [],
-    "ephemeral_defer": false,
-    "parent": "",
-    "options": [
-      {
-        "name": "",
-        "type": "STRING",
-        "description": "N/A",
-        "required": false,
-        "autocomplete": false,
-        "choices": [
-          {
+   "properties": {
+      "cooldown": 1,
+      "required_roles": [],
+      "required_users": [],
+      "required_channels": [],
+      "required_permissions": [],
+      "required_channel_permissions": [],
+      "error_handlers": {
+         "cooldown": {},
+         "reserved_for_role": {},
+         "reserved_for_user": {},
+         "reserved_for_channel": {},
+         "reserved_for_admin": {},
+         "missing_permissions": {},
+         "missing_channel_permissions": {},
+         "disabled": {}
+      },
+      "description": "N/A",
+      "admin": false,
+      "aliases": [],
+      "global": false,
+      "guilds": [],
+      "ephemeral_defer": false,
+      "parent": "",
+      "options": [
+         {
             "name": "",
-            "value": ""
-          }
-        ]
-      }
-    ]
-  }
+            "type": "STRING",
+            "description": "N/A",
+            "required": false,
+            "autocomplete": false,
+            "required_roles": [],
+            "required_users": [],
+            "required_channels": [],
+            "required_permissions": [],
+            "required_channel_permissions": [],
+            "admin": false,
+            "enabled": true,
+            "error_handlers": {
+               "reserved_for_role": {},
+               "reserved_for_user": {},
+               "reserved_for_channel": {},
+               "reserved_for_admin": {},
+               "missing_permissions": {},
+               "missing_channel_permissions": {},
+               "disabled": {}
+            },
+            "choices": [
+               {
+                  "name": "",
+                  "value": ""
+               }
+            ]
+         }
+      ]
+   }
 }
 ```
 
@@ -230,8 +246,9 @@ Two values that are worth explaining are `bonus` and `consumer`:
           "inline": false
         }
     ],
-    "components": [""],
-    "modal": "",
+    "components": [""], 
+    "modal": "", 
+    "reactions": [""],
     "delete_after": 0,
     "ephemeral": false,
     "pin": false,

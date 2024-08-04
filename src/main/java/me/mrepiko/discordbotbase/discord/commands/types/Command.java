@@ -2,6 +2,7 @@ package me.mrepiko.discordbotbase.discord.commands.types;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import me.mrepiko.discordbotbase.common.config.Config;
@@ -35,7 +36,7 @@ public abstract class Command {
     private final List<Permission> requiredPermissions = new ArrayList<>();
     private final List<Permission> requiredChannelPermissions = new ArrayList<>();
     private final List<String> aliases = new ArrayList<>();
-    private final List<OptionData> optionDataList = new ArrayList<>();
+    private final List<Option> optionsList = new ArrayList<>();
     private final List<String> guilds = new ArrayList<>();
 
     private boolean admin;
@@ -90,10 +91,13 @@ public abstract class Command {
         if (properties.has("required_channel_permissions")) for (JsonElement e: properties.get("required_channel_permissions").getAsJsonArray()) requiredChannelPermissions.add(Permission.valueOf(e.getAsString()));
         if (properties.has("aliases")) for (JsonElement e: properties.get("aliases").getAsJsonArray()) aliases.add(e.getAsString());
         if (properties.has("guilds")) for (JsonElement e: properties.get("guilds").getAsJsonArray()) guilds.add(e.getAsString());
-        JsonObject errorHandlersObject = DiscordBot.getInstance().getConfig().get("error_handlers").getAsJsonObject().get("commands").getAsJsonObject();
+        JsonObject globalErrorHandlersObject = DiscordBot.getInstance().getConfig().get("error_handlers").getAsJsonObject();
+        JsonObject errorHandlersObject = globalErrorHandlersObject.get("commands").getAsJsonObject();
+        JsonObject optionErrorHandlersObject = globalErrorHandlersObject.get("command_options").getAsJsonObject();
         JsonObject localErrorHandlersObject = (properties.has("error_handlers")) ? properties.get("error_handlers").getAsJsonObject() : new JsonObject();
         for (String e: errorHandlersObject.keySet()) {
-            if (localErrorHandlersObject.has(e) && !localErrorHandlersObject.get(e).getAsJsonObject().isEmpty()) errorHandlers.put(e, localErrorHandlersObject.get(e).getAsJsonObject());
+            if (localErrorHandlersObject.has(e) && !localErrorHandlersObject.get(e).getAsJsonObject().isEmpty())
+                errorHandlers.put(e, localErrorHandlersObject.get(e).getAsJsonObject());
             else errorHandlers.put(e, errorHandlersObject.get(e).getAsJsonObject());
         }
         global = properties.has("global") && properties.get("global").getAsBoolean();
@@ -129,7 +133,36 @@ public abstract class Command {
                         optionData.addChoice(o1.get("name").getAsString(), o1.get("value").getAsString());
                     }
                 }
-                optionDataList.add(optionData);
+                boolean optionAdmin = o.has("admin") && o.get("admin").getAsBoolean();
+                boolean optionEnabled = !o.has("enabled") || o.get("enabled").getAsBoolean();
+                List<String> optionRequiredRoles = new ArrayList<>();
+                List<String> optionRequiredChannels = new ArrayList<>();
+                List<String> optionRequiredUsers = new ArrayList<>();
+                List<Permission> optionRequiredPermissions = new ArrayList<>();
+                List<Permission> optionRequiredChannelPermissions = new ArrayList<>();
+                if (o.has("required_roles")) for (JsonElement e1: o.get("required_roles").getAsJsonArray()) optionRequiredRoles.add(e1.getAsString());
+                if (o.has("required_users")) for (JsonElement e1: o.get("required_users").getAsJsonArray()) optionRequiredUsers.add(e1.getAsString());
+                if (o.has("required_channels")) for (JsonElement e1: o.get("required_channels").getAsJsonArray()) optionRequiredChannels.add(e1.getAsString());
+                if (o.has("required_permissions")) for (JsonElement e1: o.get("required_permissions").getAsJsonArray()) optionRequiredPermissions.add(Permission.valueOf(e1.getAsString()));
+                if (o.has("required_channel_permissions")) for (JsonElement e1: o.get("required_channel_permissions").getAsJsonArray()) optionRequiredChannelPermissions.add(Permission.valueOf(e1.getAsString()));
+                HashMap<String, JsonObject> optionErrorHandlers = new HashMap<>();
+                JsonObject optionLocalErrorHandlersObject = (o.has("error_handlers")) ? o.get("error_handlers").getAsJsonObject() : new JsonObject();
+                for (String e1: optionErrorHandlersObject.keySet()) {
+                    if (optionLocalErrorHandlersObject.has(e1) && !optionLocalErrorHandlersObject.get(e1).getAsJsonObject().isEmpty())
+                        optionErrorHandlers.put(e1, optionLocalErrorHandlersObject.get(e1).getAsJsonObject());
+                    else optionErrorHandlers.put(e1, optionErrorHandlersObject.get(e1).getAsJsonObject());
+                }
+                optionsList.add(new Option(
+                        optionData,
+                        optionAdmin,
+                        optionRequiredRoles,
+                        optionRequiredChannels,
+                        optionRequiredUsers,
+                        optionRequiredPermissions,
+                        optionRequiredChannelPermissions,
+                        optionEnabled,
+                        optionErrorHandlers
+                ));
             }
         }
     }
@@ -145,5 +178,19 @@ public abstract class Command {
     }
 
     public abstract void handle(CommandContext ctx);
+
+    @AllArgsConstructor
+    @Getter
+    public static class Option {
+        private final OptionData optionData;
+        private boolean admin;
+        private final List<String> requiredRoles;
+        private final List<String> requiredChannels;
+        private final List<String> requiredUsers;
+        private final List<Permission> requiredPermissions;
+        private final List<Permission> requiredChannelPermissions;
+        private final boolean enabled;
+        private final HashMap<String, JsonObject> errorHandlers;
+    }
 
 }
