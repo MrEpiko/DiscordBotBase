@@ -37,7 +37,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>me.mrepiko.discordbotbase.discord.DiscordBot</mainClass>
+                            <mainClass>me.mrepiko.discordbotbase.DiscordBot</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
