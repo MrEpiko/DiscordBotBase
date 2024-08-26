@@ -240,12 +240,16 @@ public class ResponseBuilder {
 
         MessageEditAction messageEditAction = messageToBeEdited.editMessage(messageContent);
         if (messageContent.isEmpty() && !clearMessageContent) messageEditAction.setContent(messageToBeEdited.getContentRaw());
+        else if (clearMessageContent) messageEditAction.setContent("");
         if (embedBuilder != null) messageEditAction.setEmbeds(embedBuilder.build());
         else if (!clearEmbed) messageEditAction.setEmbeds(messageToBeEdited.getEmbeds());
+        else messageEditAction.setEmbeds(new ArrayList<>());
         if (!actionRows.isEmpty()) messageEditAction.setComponents(actionRows);
         else if (!clearComponents) messageEditAction.setComponents(messageToBeEdited.getComponents());
+        else messageEditAction.setComponents(new ArrayList<>());
         if (!files.isEmpty()) messageEditAction.setFiles(files.stream().map(FileUpload::fromData).toList());
         else if (!clearFiles) messageEditAction.setContent(messageToBeEdited.getContentRaw());
+        else messageEditAction.setFiles(new ArrayList<>());
         messageEditAction.queue(message -> {
             if (postMessageAction != null) postMessageAction.accept(message);
             if (pin) message.pin().queue();
