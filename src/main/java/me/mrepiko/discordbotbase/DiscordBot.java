@@ -16,6 +16,7 @@ import me.mrepiko.discordbotbase.tasks.TaskManager;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
@@ -33,7 +34,7 @@ import java.util.Map;
 @Getter
 public class DiscordBot {
 
-    private static DiscordBot instance;
+    @Getter private static DiscordBot instance;
     private JDA jda;
     private Config config;
     private String defaultName, developerGuildId, developerChannelId, timeFormat, dateFormat, defaultIconUrl, truncationIndicator;
@@ -62,10 +63,6 @@ public class DiscordBot {
         this.load();
     }
 
-    public static DiscordBot getInstance() {
-        return instance;
-    }
-
     private void load() {
         instance = this;
         config = new Config(Constants.MAIN_CONFIG_FILE_PATH);
@@ -92,7 +89,7 @@ public class DiscordBot {
         moduleManager = new ModuleManager();
         taskManager = new TaskManager();
 
-        jda = JDABuilder.createLight(config.get("token").getAsString())
+        JDABuilder builder = JDABuilder.createLight(config.get("token").getAsString())
                 .enableIntents(intents)
                 .setStatus(OnlineStatus.valueOf(config.get("status").getAsString()))
                 .setChunkingFilter(ChunkingFilter.ALL)
@@ -103,8 +100,16 @@ public class DiscordBot {
                         commandManager,
                         componentManager
                 )
-                .setBulkDeleteSplittingEnabled(false)
-                .build();
+                .setBulkDeleteSplittingEnabled(false);
+
+        if (!config.getJsonObject("activity").isEmpty()) {
+            JsonObject activityObject = config.getJsonObject("activity").getAsJsonObject();
+            builder.setActivity(Activity.of(
+                    Activity.ActivityType.valueOf(activityObject.get("type").getAsString()),
+                    activityObject.get("message").getAsString()
+            ));
+        }
+        jda = builder.build();
     }
 
     public void setup() {
