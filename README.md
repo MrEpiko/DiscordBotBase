@@ -14,7 +14,7 @@ Please keep in mind that this README does not include every single feature of th
 7. [ResponseBuilder](#responsebuilder)
     - [Response structure](#response-structure)
     - [Component (handler) overriding](#component-row-overriding)
-8. [EventWaiter and interfaces](#eventwaiter)
+8. [EventWaiter and interfaces](#eventwaiter-and-interfaces)
 9. [License](#license)
 
 ## Getting started
