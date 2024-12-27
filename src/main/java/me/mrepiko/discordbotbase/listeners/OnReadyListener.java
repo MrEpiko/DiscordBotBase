@@ -1,4 +1,4 @@
-package me.mrepiko.discordbotbase.listeners.general;
+package me.mrepiko.discordbotbase.listeners;
 
 import me.mrepiko.discordbotbase.DiscordBot;
 import net.dv8tion.jda.api.events.session.ReadyEvent;

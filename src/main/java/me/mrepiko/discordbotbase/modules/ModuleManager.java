@@ -2,8 +2,8 @@ package me.mrepiko.discordbotbase.modules;
 
 import com.google.gson.JsonObject;
 import lombok.Getter;
-import me.mrepiko.discordbotbase.modules.executor.ShowcaseListenerModule;
-import me.mrepiko.discordbotbase.modules.executor.ShowcaseTaskModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -13,6 +13,7 @@ import java.util.Locale;
 @Getter
 public class ModuleManager {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ModuleManager.class);
     private final List<Module> modules = new ArrayList<>();
 
     public ModuleManager() {
@@ -20,8 +21,7 @@ public class ModuleManager {
     }
 
     private void registerModules() {
-        addModule(new ShowcaseTaskModule());
-        addModule(new ShowcaseListenerModule());
+
     }
 
     public void setupModules(JsonObject modulesConfig) {
@@ -36,10 +36,9 @@ public class ModuleManager {
             }
             try {
                 m.enable();
-                System.out.println("[Module] " + m.getName() + " has been enabled.");
+                LOGGER.info("[Module] {} has been enabled.", m.getName());
             } catch (Exception exception) {
-                System.out.println("[Module] Issue while trying to enable " + m.getName() + ":");
-                exception.printStackTrace();
+                LOGGER.error("[Module] Issue while trying to enable {}", m.getName(), exception);
             }
         }
         modules.clear();

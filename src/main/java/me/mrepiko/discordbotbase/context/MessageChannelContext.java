@@ -11,9 +11,15 @@ import org.jetbrains.annotations.Nullable;
 
 @AllArgsConstructor
 @Getter
-public class ChannelContext implements IContext {
+public class MessageChannelContext implements Context {
 
     private final MessageChannel channel;
+    private final User user;
+
+    public MessageChannelContext(MessageChannel channel) {
+        this.channel = channel;
+        this.user = null;
+    }
 
     @Nullable
     @Override
@@ -30,7 +36,7 @@ public class ChannelContext implements IContext {
     @Nullable
     @Override
     public User getUser() {
-        return null;
+        return user;
     }
 
     @Nullable

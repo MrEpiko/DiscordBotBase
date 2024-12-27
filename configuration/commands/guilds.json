@@ -1,0 +1,17 @@
+{
+  "properties": {
+    "description": "View amount of guilds the bot is in.",
+    "admin": true,
+    "guilds": [],
+    "ephemeral_defer": false
+  },
+  "response": {
+    "description": "Bot is currently in **{guild_count_f} guilds** and can be seen by **{member_count_f} members**. Down below you can find more information about bot's guilds:\n\n- Sorted by member sizes: https://hastebin.com/share/{member_count_guilds_key}\n- Sorted by join date: https://hastebin.com/share/{join_timestamp_guilds_key}",
+    "color": "{default_color}",
+    "footer_icon_url": "{default_icon_url}",
+    "footer_text": "{default_name}",
+    "timestamp": "{current_timestamp_millis}"
+  },
+  "member_count_template": "{guild_joined_at_date} {guild_joined_at_time} | {guild_member_count} | {guild_name} ({guild_id}) - Owned by {guild_owner_id}\n\n",
+  "join_timestamp_template": "{guild_joined_at_date} {guild_joined_at_time} | {guild_member_count} | {guild_name} ({guild_id}) - Owned by {guild_owner_id}\n\n"
+}

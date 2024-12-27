@@ -1,10 +1,14 @@
-package me.mrepiko.discordbotbase.mics;
+package me.mrepiko.discordbotbase.mics.placeholders;
 
+import com.google.gson.JsonElement;
 import lombok.Getter;
 import me.mrepiko.discordbotbase.DiscordBot;
-import me.mrepiko.discordbotbase.context.IContext;
+import me.mrepiko.discordbotbase.commands.CommandManager;
+import me.mrepiko.discordbotbase.commands.types.Command;
+import me.mrepiko.discordbotbase.context.Context;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
+import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
 import java.time.LocalDate;
@@ -12,6 +16,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -19,16 +24,39 @@ import java.util.Map;
 public class PlaceholderMap {
 
     private HashMap<String, String> map = new HashMap<>();
-    private final IContext ctx;
+    private final Context ctx;
 
-    public PlaceholderMap(IContext ctx) {
+    public PlaceholderMap(Context ctx) {
         this.ctx = ctx;
         if (ctx.getGuild() != null) put("ctx_guild", ctx.getGuild());
         if (ctx.getUser() != null) put("ctx_user", ctx.getUser());
         if (ctx.getMember() != null) put("ctx_member", ctx.getMember());
         if (ctx.getMessage() != null) put("ctx_message", ctx.getMessage());
         if (ctx.getChannel() != null) put("ctx_channel", ctx.getChannel());
+        registerGlobalPlaceholders();
+        registerCommandPlaceholders();
+    }
+
+    public PlaceholderMap() {
+        this(true, false);
+    }
+
+    public PlaceholderMap(boolean registerGlobalPlaceholders, boolean registerCommandPlaceholders) {
+        this.ctx = null;
+        if (registerGlobalPlaceholders) registerGlobalPlaceholders();
+        if (registerCommandPlaceholders) registerCommandPlaceholders();
+    }
+
+    public PlaceholderMap(Context ctx, PlaceholderMap overrideMap) {
+        this.ctx = ctx;
+        this.map = overrideMap.getMap();
+    }
+
+    private void registerGlobalPlaceholders() {
         DiscordBot instance = DiscordBot.getInstance();
+        for (Map.Entry<String, JsonElement> entry : instance.getConstantPlaceholders().entrySet()) {
+            map.put(entry.getKey(), entry.getValue().getAsString());
+        }
         map.put("bot_name", instance.getJda().getSelfUser().getName());
         map.put("bot_id", instance.getJda().getSelfUser().getId());
         map.put("current_time", LocalTime.now().format(DateTimeFormatter.ofPattern(instance.getTimeFormat())));
@@ -42,19 +70,23 @@ public class PlaceholderMap {
         if (instance.getDeveloperGuild() != null) put("developer_guild", instance.getDeveloperGuild());
     }
 
-    public PlaceholderMap(IContext ctx, PlaceholderMap overrideMap) {
-        this.ctx = ctx;
-        this.map = overrideMap.getMap();
+    private void registerCommandPlaceholders() {
+        CommandManager commandManager = DiscordBot.getInstance().getCommandManager();
+        for (Command command : commandManager.getCommands()) {
+            put("command", command, true);
+        }
     }
 
     public void put(String identifier, String input) {
         map.put(identifier, input);
-        map.put(identifier + "_lower", (input == null) ? "null" : input.toLowerCase(Locale.ROOT));
-        map.put(identifier + "_upper", (input == null) ? "NULL" : input.toUpperCase(Locale.ROOT));
     }
 
     public void put(String identifier, Number number) {
         map.put(identifier, String.valueOf(number));
+        if (number instanceof Integer) map.put(identifier + "_f", String.format("%,d", number));
+        else if (number instanceof Long) map.put(identifier + "_f", String.format("%,d", number));
+        else if (number instanceof Double) map.put(identifier + "_f", String.format("%,.2f", number));
+        else if (number instanceof Float) map.put(identifier + "_f", String.format("%,.2f", number));
     }
 
     public void put(String identifier, boolean bool) {
@@ -145,8 +177,10 @@ public class PlaceholderMap {
         if (messageEmbed.getColor() != null) put(identifier + "_color", messageEmbed.getColor());
         else map.put(identifier + "_color", "#000000");
         map.put(identifier + "_url", messageEmbed.getUrl());
-        map.put(identifier + "_author_text", messageEmbed.getAuthor().getName());
-        map.put(identifier + "_author_url", messageEmbed.getAuthor().getUrl());
+        if (messageEmbed.getAuthor() != null) {
+            map.put(identifier + "_author_text", messageEmbed.getAuthor().getName());
+            map.put(identifier + "_author_url", messageEmbed.getAuthor().getUrl());
+        }
         map.put(identifier + "_footer_text", messageEmbed.getFooter().getText());
         if (messageEmbed.getTimestamp() != null) put(identifier + "_timestamp", messageEmbed.getTimestamp());
         else {
@@ -164,8 +198,46 @@ public class PlaceholderMap {
         put(identifier + "_milliseconds", offsetDateTime.toInstant().getEpochSecond() * 1000);
     }
 
+    public void put(String identifier, Command command, boolean includeCommandName) {
+        String id = command.getDiscordId();
+        if (id == null && command.getParent() != null) id = command.getParent().getDiscordId();
+        if (includeCommandName) {
+            map.put(identifier + "_" + command.getName().toLowerCase(Locale.ROOT) + "_id", id);
+            map.put(identifier + "_" + command.getName().toLowerCase(Locale.ROOT) + "_mention", "</" + command.getName().replace("_", " ") + ":" + id + ">");
+            map.put(identifier + "_" + command.getName().toLowerCase(Locale.ROOT) + "_description", command.getDescription());
+            return;
+        }
+        map.put(identifier + "_id", id);
+        map.put(identifier + "_mention", "</" + command.getName().replace("_", " ") + ":" + id + ">");
+        map.put(identifier + "_description", command.getDescription());
+    }
+
+    public void put(String identifier, PlaceholderMap placeholderMap) {
+        for (Map.Entry<String, String> e: placeholderMap.getMap().entrySet()) {
+            put(identifier + "_" + e.getKey(), e.getValue());
+        }
+    }
+
+    public void put(String identifier, @Nullable Placeholderable placeholderable) {
+        if (placeholderable == null) return;
+        put(identifier, placeholderable.getPlaceholderMap());
+    }
+
+    public void put(String identifier, String entryIdentifier, List<? extends Placeholderable> placeholderables, String input) {
+        StringBuilder output = new StringBuilder();
+        for (Placeholderable o: placeholderables) {
+            if (o == null) continue;
+            put(entryIdentifier, o.getPlaceholderMap());
+            output.append(applyPlaceholders(input));
+        }
+        put(identifier, output.toString());
+    }
+
     public String applyPlaceholders(String string) {
-        for (Map.Entry<String, String> e: map.entrySet()) string = string.replace("{" + e.getKey() + "}", (e.getValue() == null) ? "null" : e.getValue());
+        if (string == null) return "";
+        for (Map.Entry<String, String> e: map.entrySet()) {
+            string = string.replace("{" + e.getKey() + "}", (e.getValue() == null) ? "null" : e.getValue());
+        }
         return string;
     }
 

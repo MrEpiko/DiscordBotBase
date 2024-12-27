@@ -8,17 +8,15 @@ import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 
 import javax.annotation.Nullable;
 
-public interface IContext {
+public interface Context {
 
     @Nullable
     Guild getGuild();
     @Nullable
-    MessageChannel getChannel();
-    @Nullable
     Message getMessage();
     @Nullable
-    User getUser();
-    @Nullable
     Member getMember();
+    MessageChannel getChannel();
+    User getUser();
 
 }

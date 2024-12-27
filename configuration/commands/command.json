@@ -1,0 +1,9 @@
+{
+
+  "properties": {
+    "description": "Parent command for command administration-related commands.",
+    "admin": true,
+    "guilds": []
+  }
+
+}

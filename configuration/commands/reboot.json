@@ -1,0 +1,17 @@
+{
+
+  "properties": {
+    "description": "Reboot the bot.",
+    "admin": true,
+    "guilds": []
+  },
+
+  "response": {
+    "description": "Rebooting the bot...",
+    "color": "{default_color}",
+    "footer_icon_url": "{default_icon_url}",
+    "footer_text": "{default_name}",
+    "timestamp": "{current_timestamp_millis}"
+  }
+
+}

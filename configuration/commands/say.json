@@ -1,0 +1,48 @@
+{
+  "properties": {
+    "description": "Make bot say something or edit a message.",
+    "admin": true,
+    "guilds": [],
+    "options": [
+      {
+        "name": "query",
+        "type": "STRING",
+        "description": "Response query.",
+        "required": true
+      },
+      {
+        "name": "message_id",
+        "type": "STRING",
+        "description": "Message ID to edit.",
+        "required": false
+      }
+    ]
+  },
+
+  "response": {
+    "description": "Message has been successfully sent/edited.",
+    "color": "{default_color}",
+    "footer_icon_url": "{default_icon_url}",
+    "footer_text": "{default_name}",
+    "timestamp": "{current_timestamp_millis}",
+    "ephemeral": true
+  },
+
+  "invalid_message_response": {
+    "description": "That message does not exist.",
+    "color": "{default_color}",
+    "footer_icon_url": "{default_icon_url}",
+    "footer_text": "{default_name}",
+    "timestamp": "{current_timestamp_millis}",
+    "ephemeral": true
+  },
+
+  "error_response": {
+    "description": "There was an error with your query:\n```{query}```",
+    "color": "{default_color}",
+    "footer_icon_url": "{default_icon_url}",
+    "footer_text": "{default_name}",
+    "timestamp": "{current_timestamp_millis}",
+    "ephemeral": true
+  }
+}

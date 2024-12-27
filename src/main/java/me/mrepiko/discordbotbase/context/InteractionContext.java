@@ -13,7 +13,7 @@ import org.jetbrains.annotations.Nullable;
 
 @AllArgsConstructor
 @Getter
-public class InteractionContext implements IContext {
+public class InteractionContext implements Context {
 
     private final Event event;
     private final IReplyCallback callback;
@@ -21,13 +21,16 @@ public class InteractionContext implements IContext {
     @Nullable
     @Override
     public Guild getGuild() {
-        return null;
+        return callback.getGuild();
     }
 
-    @Nullable
+    public String getGuildId() {
+        return (getGuild() != null) ? getGuild().getId() : "";
+    }
+
     @Override
     public MessageChannel getChannel() {
-        return null;
+        return callback.getMessageChannel();
     }
 
     @Nullable
@@ -36,15 +39,14 @@ public class InteractionContext implements IContext {
         return null;
     }
 
-    @Nullable
     @Override
     public User getUser() {
-        return null;
+        return callback.getUser();
     }
 
     @Nullable
     @Override
     public Member getMember() {
-        return null;
+        return callback.getMember();
     }
 }

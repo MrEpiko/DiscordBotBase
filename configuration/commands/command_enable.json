@@ -1,0 +1,37 @@
+{
+  "properties": {
+    "description": "Enable command(s).",
+    "admin": true,
+    "guilds": [],
+    "parent": "command",
+    "options": [
+      {
+        "name": "command",
+        "type": "STRING",
+        "description": "Command's name to enable.",
+        "required": false
+      }
+    ]
+  },
+  "enabled_all_response": {
+    "description": "All commands have been successfully enabled.",
+    "color": "{default_color}",
+    "footer_icon_url": "{default_icon_url}",
+    "footer_text": "{default_name}",
+    "timestamp": "{current_timestamp_millis}"
+  },
+  "response": {
+    "description": "Command with name `{command_name}` has been successfully enabled.",
+    "color": "{default_color}",
+    "footer_icon_url": "{default_icon_url}",
+    "footer_text": "{default_name}",
+    "timestamp": "{current_timestamp_millis}"
+  },
+  "invalid_command_response": {
+    "description": "Command with name `{command_name}` does not exist or is an admin command.",
+    "color": "{default_color}",
+    "footer_icon_url": "{default_icon_url}",
+    "footer_text": "{default_name}",
+    "timestamp": "{current_timestamp_millis}"
+  }
+}

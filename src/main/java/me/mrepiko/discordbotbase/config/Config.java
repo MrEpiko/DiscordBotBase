@@ -4,10 +4,7 @@ import com.google.gson.*;
 import lombok.Getter;
 import lombok.SneakyThrows;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.Writer;
+import java.io.*;
 
 @Getter
 public class Config {

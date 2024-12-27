@@ -2,13 +2,23 @@ package me.mrepiko.discordbotbase.commands;
 
 import lombok.Getter;
 import me.mrepiko.discordbotbase.DiscordBot;
-import me.mrepiko.discordbotbase.commands.handlers.ShowcaseCmd;
+import me.mrepiko.discordbotbase.commands.handlers.GuildsCmd;
+import me.mrepiko.discordbotbase.commands.handlers.RebootCmd;
+import me.mrepiko.discordbotbase.commands.handlers.ReloadCmd;
+import me.mrepiko.discordbotbase.commands.handlers.SayCmd;
+import me.mrepiko.discordbotbase.commands.handlers.commands.CommandCmd;
+import me.mrepiko.discordbotbase.commands.handlers.commands.CommandDisableCmd;
+import me.mrepiko.discordbotbase.commands.handlers.commands.CommandEnableCmd;
+import me.mrepiko.discordbotbase.commands.handlers.diagnostics.DiagnosticsCmd;
+import me.mrepiko.discordbotbase.commands.handlers.diagnostics.DiagnosticsCommandsCmd;
+import me.mrepiko.discordbotbase.commands.handlers.diagnostics.DiagnosticsModulesCmd;
+import me.mrepiko.discordbotbase.commands.handlers.diagnostics.DiagnosticsTasksCmd;
 import me.mrepiko.discordbotbase.commands.types.Command;
 import me.mrepiko.discordbotbase.commands.types.ResponseCommand;
 import me.mrepiko.discordbotbase.context.interaction.CommandContext;
 import me.mrepiko.discordbotbase.mics.Constants;
-import me.mrepiko.discordbotbase.mics.PlaceholderMap;
 import me.mrepiko.discordbotbase.mics.ResponseBuilder;
+import me.mrepiko.discordbotbase.mics.placeholders.PlaceholderMap;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
@@ -25,6 +35,8 @@ import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.*;
@@ -32,6 +44,7 @@ import java.util.*;
 @Getter
 public class CommandManager extends ListenerAdapter {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(CommandManager.class);
     private final List<Command> commands = new ArrayList<>();
     private final HashMap<String, HashMap<String, List<net.dv8tion.jda.api.interactions.commands.Command.Choice>>> autocompleteOptions = new HashMap<>();
 
@@ -41,11 +54,23 @@ public class CommandManager extends ListenerAdapter {
     }
 
     private void registerCommands() {
-        addCommand(new ShowcaseCmd());
+        addCommand(new CommandCmd());
+        addCommand(new CommandEnableCmd());
+        addCommand(new CommandDisableCmd());
+
+        addCommand(new DiagnosticsCmd());
+        addCommand(new DiagnosticsCommandsCmd());
+        addCommand(new DiagnosticsModulesCmd());
+        addCommand(new DiagnosticsTasksCmd());
+
+        addCommand(new GuildsCmd());
+        addCommand(new RebootCmd());
+        addCommand(new ReloadCmd());
+        addCommand(new SayCmd());
     }
 
     private void sortSubcommands() {
-        for (Command c: commands) {
+        for (Command c : commands) {
             if (c.getParentName().isEmpty()) continue;
             Command parent = getCommand(c.getParentName());
             if (parent == null) continue;
@@ -61,12 +86,16 @@ public class CommandManager extends ListenerAdapter {
 
     @Nullable
     private Command getCommand(String name) {
-        for (Command c: commands) if (c.getName().equalsIgnoreCase(name) || c.getAliases().contains(name)) return c;
+        for (Command c : commands) {
+            if (c.getName().equalsIgnoreCase(name) || c.getAliases().contains(name)) return c;
+        }
         return null;
     }
 
     private boolean contains(Command command) {
-        for (Command c: commands) if (c.getName().toLowerCase(Locale.ROOT).equalsIgnoreCase(command.getName().toLowerCase(Locale.ROOT))) return true;
+        for (Command c : commands)
+            if (c.getName().toLowerCase(Locale.ROOT).equalsIgnoreCase(command.getName().toLowerCase(Locale.ROOT)))
+                return true;
         return false;
     }
 
@@ -75,6 +104,10 @@ public class CommandManager extends ListenerAdapter {
     public void setupCommands() {
         registerCommands();
         sortSubcommands();
+        DiscordBot instance = DiscordBot.getInstance();
+        String developerGuildId = instance.getDeveloperGuildId();
+        boolean development = instance.isDevelopment();
+
         File folder = new File(Constants.COMMAND_CONFIGURATION_FOLDER_PATH);
         File responseFolder = new File(Constants.RESPONSE_COMMAND_CONFIGURATION_FOLDER_PATH);
         if (!folder.exists()) {
@@ -88,10 +121,16 @@ public class CommandManager extends ListenerAdapter {
         HashMap<String, List<CommandData>> guildSpecificCommands = new HashMap<>();
 
         HashMap<String, Boolean> fileQueue = new HashMap<>();
-        for (File f: Objects.requireNonNull(folder.listFiles())) fileQueue.put(f.getName().substring(0, f.getName().length() - 5), false);
-        for (File f: Objects.requireNonNull(responseFolder.listFiles())) fileQueue.put(f.getName().substring(0, f.getName().length() - 5), true);
+        for (File f : Objects.requireNonNull(folder.listFiles())) {
+            if (f.getName().endsWith(".txt")) continue;
+            fileQueue.put(f.getName().substring(0, f.getName().length() - 5), false);
+        }
+        for (File f : Objects.requireNonNull(responseFolder.listFiles())) {
+            if (f.getName().endsWith(".txt")) continue;
+            fileQueue.put(f.getName().substring(0, f.getName().length() - 5), true);
+        }
 
-        for (Map.Entry<String, Boolean> e: fileQueue.entrySet()) {
+        for (Map.Entry<String, Boolean> e : fileQueue.entrySet()) {
             String name = e.getKey();
             boolean responseCommand = e.getValue();
             Command command = (responseCommand) ? new ResponseCommand(name) : getCommand(name);
@@ -103,26 +142,32 @@ public class CommandManager extends ListenerAdapter {
             allCommandAppearances.add(name);
             commandsToBeRegistered.add(command);
 
-            if (command.isGlobal()) {
-                for (String a: allCommandAppearances) {
+            if (command.isGlobal() && !development) {
+                for (String a : allCommandAppearances) {
                     if (command.isHideOriginalName() && a.equalsIgnoreCase(name)) continue;
                     SlashCommandData data = Commands.slash(a, command.getDescription())
                             .setGuildOnly(false)
                             .addOptions(command.getOptionsList().stream().map(Command.Option::getOptionData).toList())
                             .setDefaultPermissions((command.isAdmin()) ? DefaultMemberPermissions.DISABLED : DefaultMemberPermissions.ENABLED);
-                    for (Command c: command.getChildren()) data.addSubcommands(new SubcommandData(c.getName().replace("_", "").replace(command.getName(), ""), c.getDescription()).addOptions(c.getOptionsList().stream().map(Command.Option::getOptionData).toList()));
+                    for (Command c : command.getChildren())
+                        data.addSubcommands(new SubcommandData(c.getName().replace("_", "").replace(command.getName(), ""), c.getDescription()).addOptions(c.getOptionsList().stream().map(Command.Option::getOptionData).toList()));
                     commandDataList.add(data);
                 }
             } else {
                 if (command.getGuilds().isEmpty()) {
-                    for (String a: allCommandAppearances) {
+                    for (String a : allCommandAppearances) {
                         if (command.isHideOriginalName() && a.equalsIgnoreCase(name)) continue;
                         SlashCommandData data = Commands.slash(a, command.getDescription())
                                 .setGuildOnly(true)
                                 .addOptions(command.getOptionsList().stream().map(Command.Option::getOptionData).toList())
                                 .setDefaultPermissions((command.isAdmin()) ? DefaultMemberPermissions.DISABLED : DefaultMemberPermissions.ENABLED);
-                        for (Command c: command.getChildren()) data.addSubcommands(new SubcommandData(c.getName().replace("_", "").replace(command.getName(), ""), c.getDescription()).addOptions(c.getOptionsList().stream().map(Command.Option::getOptionData).toList()));
-                        commandDataList.add(data);
+                        for (Command c : command.getChildren())
+                            data.addSubcommands(new SubcommandData(c.getName().replace("_", "").replace(command.getName(), ""), c.getDescription()).addOptions(c.getOptionsList().stream().map(Command.Option::getOptionData).toList()));
+                        if (development) {
+                            List<CommandData> previousCommands = new ArrayList<>(guildSpecificCommands.getOrDefault(developerGuildId, new ArrayList<>()));
+                            previousCommands.add(data);
+                            guildSpecificCommands.put(developerGuildId, previousCommands);
+                        } else commandDataList.add(data);
                     }
                 } else {
                     for (String guildId : command.getGuilds()) {
@@ -133,37 +178,52 @@ public class CommandManager extends ListenerAdapter {
                                     .setGuildOnly(true)
                                     .addOptions(command.getOptionsList().stream().map(Command.Option::getOptionData).toList())
                                     .setDefaultPermissions((command.isAdmin()) ? DefaultMemberPermissions.DISABLED : DefaultMemberPermissions.ENABLED);
-                            for (Command c : command.getChildren()) data.addSubcommands(new SubcommandData(c.getName().replace("_", "").replace(command.getName(), ""), c.getDescription()).addOptions(c.getOptionsList().stream().map(Command.Option::getOptionData).toList()));
+                            for (Command c : command.getChildren())
+                                data.addSubcommands(new SubcommandData(c.getName().replace("_", "").replace(command.getName(), ""), c.getDescription()).addOptions(c.getOptionsList().stream().map(Command.Option::getOptionData).toList()));
                             previousCommands.add(data);
                         }
-                        guildSpecificCommands.put(guildId, previousCommands);
+                        guildSpecificCommands.put(development ? developerGuildId : guildId, previousCommands);
                     }
                 }
             }
 
-            if (command.getAutocompleteOptions().size() > 0) for (String a: allCommandAppearances) autocompleteOptions.put(a, command.getAutocompleteOptions());
-            System.out.println(((responseCommand) ? "[ResponseCommand]" : "[Command]") +
-                    " " +
-                    name +
-                    " has been registered " +
-                    ((command.isGlobal()) ? "globally" : "in " + ((command.getGuilds().size() == 0) ? DiscordBot.getInstance().getJda().getGuilds().size() : command.getGuilds().size()) + " guild(s)") +
-                    ((command.getChildren().isEmpty()) ? "." : " with " + command.getChildren().size() + " subcommand(s).")
-            );
+            if (!command.getAutocompleteOptions().isEmpty())
+                for (String a : allCommandAppearances) autocompleteOptions.put(a, command.getAutocompleteOptions());
+
+            LOGGER.info("{} {} has been registered {}{}", (responseCommand) ? "[ResponseCommand]" : "[Command]", name, (command.isGlobal()) ? "globally" : "in " + ((command.getGuilds().isEmpty()) ? instance.getJda().getGuilds().size() : command.getGuilds().size()) + " guild(s)", (command.getChildren().isEmpty()) ? "." : " with " + command.getChildren().size() + " subcommand(s).");
         }
 
         List<String> overrideCommandNames = commandDataList.stream().map(CommandData::getName).toList();
-        JDA jda = DiscordBot.getInstance().getJda();
+        JDA jda = instance.getJda();
         jda.retrieveCommands().queue(retrievedCommands -> {
-            for (net.dv8tion.jda.api.interactions.commands.Command c: retrievedCommands) if (!overrideCommandNames.contains(c.getName())) jda.deleteCommandById(c.getId()).queue(d -> {}, d -> {});
-            jda.updateCommands().addCommands(commandDataList).queue();
+            for (net.dv8tion.jda.api.interactions.commands.Command c : retrievedCommands)
+                if (!overrideCommandNames.contains(c.getName())) jda.deleteCommandById(c.getId()).queue(d -> {
+                }, d -> {
+                });
+            jda.updateCommands().addCommands(commandDataList).queue(discordCommands -> {
+                for (net.dv8tion.jda.api.interactions.commands.Command discordCommand : discordCommands) {
+                    Command registeredCommand = getCommand(discordCommand.getName());
+                    if (registeredCommand == null) continue;
+                    registeredCommand.setDiscordId(discordCommand.getId());
+                }
+            });
         });
-        for (Map.Entry<String, List<CommandData>> e: guildSpecificCommands.entrySet()) {
+        for (Map.Entry<String, List<CommandData>> e : guildSpecificCommands.entrySet()) {
             Guild guild = jda.getGuildById(e.getKey());
             if (guild == null) continue;
             List<String> overrideGuildCommandNames = e.getValue().stream().map(CommandData::getName).toList();
             guild.retrieveCommands().queue(retrieveCommands -> {
-                for (net.dv8tion.jda.api.interactions.commands.Command c: retrieveCommands) if (!overrideGuildCommandNames.contains(c.getName())) jda.deleteCommandById(c.getId()).queue(d -> {}, d -> {});
-                guild.updateCommands().addCommands(e.getValue()).queue();
+                for (net.dv8tion.jda.api.interactions.commands.Command c : retrieveCommands)
+                    if (!overrideGuildCommandNames.contains(c.getName())) jda.deleteCommandById(c.getId()).queue(d -> {
+                    }, d -> {
+                    });
+                guild.updateCommands().addCommands(e.getValue()).queue(discordCommands -> {
+                    for (net.dv8tion.jda.api.interactions.commands.Command discordCommand : discordCommands) {
+                        Command registeredCommand = getCommand(discordCommand.getName());
+                        if (registeredCommand == null) continue;
+                        registeredCommand.setDiscordId(discordCommand.getId());
+                    }
+                });
             });
         }
         commands.clear();
@@ -198,7 +258,7 @@ public class CommandManager extends ListenerAdapter {
         }
         if (event.getMember() != null && !command.getRequiredRoles().isEmpty()) {
             boolean hasRole = false;
-            for (Role r: event.getMember().getRoles()) {
+            for (Role r : event.getMember().getRoles()) {
                 if (command.getRequiredRoles().contains(r.getId())) {
                     hasRole = true;
                     break;
@@ -225,8 +285,16 @@ public class CommandManager extends ListenerAdapter {
             ResponseBuilder.build(map, command.getErrorHandlers().get("missing_channel_permissions")).send();
             return;
         }
+        if (event.getGuild() != null && !event.getGuild().getSelfMember().hasPermission(command.getRequiredBotPermissions())) {
+            ResponseBuilder.build(map, command.getErrorHandlers().get("missing_bot_permissions")).send();
+            return;
+        }
+        if (event.isFromGuild() && command.isTalk() && !event.getChannel().canTalk()) {
+            ResponseBuilder.build(map, command.getErrorHandlers().get("cannot_talk")).send();
+            return;
+        }
 
-        for (Command.Option option: command.getOptionsList()) {
+        for (Command.Option option : command.getOptionsList()) {
             for (OptionMapping optionMapping : event.getOptions()) {
                 if (option.getOptionData().getName().equalsIgnoreCase(optionMapping.getName())) {
                     map.put("option", option.getOptionData().getName());
@@ -240,7 +308,7 @@ public class CommandManager extends ListenerAdapter {
                     }
                     if (event.getMember() != null && !option.getRequiredRoles().isEmpty()) {
                         boolean hasRole = false;
-                        for (Role r: event.getMember().getRoles()) {
+                        for (Role r : event.getMember().getRoles()) {
                             if (option.getRequiredRoles().contains(r.getId())) {
                                 hasRole = true;
                                 break;
@@ -273,18 +341,23 @@ public class CommandManager extends ListenerAdapter {
 
         if (command.getCooldown() > 0) command.getCooldowns().put(user.getId(), System.currentTimeMillis());
         if (command.isDefer()) ctx.getCallback().deferReply(command.isEphemeralDefer()).queue();
+
         command.handle(ctx);
     }
 
     @Override
     public void onCommandAutoCompleteInteraction(@NotNull CommandAutoCompleteInteractionEvent event) {
         List<net.dv8tion.jda.api.interactions.commands.Command.Choice> choices = new ArrayList<>(autocompleteOptions.getOrDefault(event.getName(), new HashMap<>()).getOrDefault(event.getFocusedOption().getName(), new ArrayList<>()));
+
         if (choices.isEmpty()) return;
         event.replyChoices(choices
                 .stream()
                 .filter(x -> x.getAsString().startsWith(event.getFocusedOption().getValue()))
                 .map(x -> new net.dv8tion.jda.api.interactions.commands.Command.Choice(x.getName(), x.getAsString()))
                 .toList()
-        ).queue(x -> {}, x -> {});
+        ).queue(x -> {
+        }, x -> {
+        });
     }
+
 }

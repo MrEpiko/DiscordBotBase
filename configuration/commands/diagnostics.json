@@ -1,0 +1,7 @@
+{
+  "properties": {
+    "description": "Parent command for diagnostics-related inquiries.",
+    "admin": true,
+    "guilds": []
+  }
+}

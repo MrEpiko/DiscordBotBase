@@ -1,0 +1,18 @@
+{
+  "properties": {
+    "description": "Check command diagnostics.",
+    "admin": true,
+    "guilds": [],
+    "parent": "diagnostics"
+  },
+  "response": {
+    "description": "{commands}",
+    "color": "{default_color}",
+    "footer_icon_url": "{default_icon_url}",
+    "footer_text": "{default_name}",
+    "timestamp": "{current_timestamp_millis}"
+  },
+  "enabled_template": "🟢",
+  "disabled_template": "🔴",
+  "command_template": "{command_status} | `{command_guild_count}` | {command_mention} (`{command_name}`)\n"
+}

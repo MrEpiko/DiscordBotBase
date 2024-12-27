@@ -1,23 +1,28 @@
 {
 
   "token": "",
+  "status": "ONLINE",
   "activity": {
     "type": "",
     "message": ""
   },
-  "status": "ONLINE",
   "admins": [],
   "intents": [],
 
+  "development": true,
+
   "default": {
     "name": "",
-    "color": "",
+    "color": "#000001",
     "icon_url": "",
     "developer_channel_id": "",
     "developer_guild_id": "",
-    "time_format": "",
-    "date_format": "",
-    "truncation_indicator": "..."
+    "time_format": "HH:mm",
+    "date_format": "dd.MM.yyyy",
+    "truncation_indicator": "...",
+    "response": {
+      "message": "This is a placeholder response!"
+    }
   },
 
   "endpoints": {},
@@ -25,19 +30,20 @@
 
   "referenced_roles": {},
 
-  "modules": {
-    "showcase_task": true,
-    "showcase_listener": true
+  "modules": {},
+
+  "constant_placeholders": {
+    "i": "\u200E"
   },
 
   "databases": [
     {
       "id": "default",
       "host": "",
+      "port": "3306",
       "database": "",
       "user": "",
-      "password": "",
-      "port": ""
+      "password": ""
     }
   ],
 
@@ -78,9 +84,19 @@
         "description": "You are missing the required permissions.",
         "color": "{default_color}"
       },
+      "missing_bot_permissions": {
+        "ephemeral": true,
+        "description": "It seems like I don't have the required permissions to execute this command.\n\nIf this issue keeps occurring, make sure to re-invite me to your server through **[this link]({link_main})**.",
+        "color": "{default_color}"
+      },
       "disabled": {
         "ephemeral": true,
         "description": "This command is currently disabled.",
+        "color": "{default_color}"
+      },
+      "cannot_talk": {
+        "ephemeral": true,
+        "description": "It seems like I don't have the required permissions to send messages in this channel.\n\nSome minigame commands require me to be able to fully see and send messages in the channel in order for them to work.\n\n**{informative} If you are a server administrator, make sure to give me `VIEW_CHANNEL` & `SEND_MESSAGES` permissions in this channel.**",
         "color": "{default_color}"
       }
     },
@@ -110,6 +126,11 @@
         "description": "You are not allowed to execute this component.",
         "color": "{default_color}"
       },
+      "reserved_for_invoker": {
+        "ephemeral": true,
+        "description": "Only component invoker can execute this component.",
+        "color": "{default_color}"
+      },
       "missing_permissions": {
         "ephemeral": true,
         "description": "You are missing the required permissions.",
@@ -123,6 +144,11 @@
       "disabled": {
         "ephemeral": true,
         "description": "This component is currently disabled.",
+        "color": "{default_color}"
+      },
+      "cannot_talk": {
+        "ephemeral": true,
+        "description": "It seems like I don't have the required permissions to send messages in this channel.\n\nSome minigame commands require me to be able to fully see and send messages in the channel in order for them to work.\n\n**{informative} If you are a server administrator, make sure to give me `VIEW_CHANNEL` & `SEND_MESSAGES` permissions in this channel.**",
         "color": "{default_color}"
       }
     },

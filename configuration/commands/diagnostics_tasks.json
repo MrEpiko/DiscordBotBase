@@ -1,0 +1,19 @@
+{
+  "properties": {
+    "description": "Check task diagnostics.",
+    "admin": true,
+    "guilds": [],
+    "parent": "diagnostics"
+  },
+  "response": {
+    "description": "{tasks}",
+    "color": "{default_color}",
+    "footer_icon_url": "{default_icon_url}",
+    "footer_text": "{default_name}",
+    "timestamp": "{current_timestamp_millis}"
+  },
+  "scheduled_task_template": "`{task_id}` - Scheduled task with **{task_delay} seconds** delay.\n- Execution: \u003ct:{task_first_execution_timestamp}:R>",
+  "scheduled_at_fixed_rate_task_template": "`{task_id}` - Task scheduled at fixed rate with **{task_delay} seconds** delay and **{task_period} seconds** period.\n- First execution: \u003ct:{task_first_execution_timestamp}:R\u003e\n- Last execution: \u003ct:{task_most_recent_execution_timestamp}:R\u003e\n- Next execution: \u003ct:{task_next_execution_timestamp}:R>",
+  "task_template": "- {task}\n\n",
+  "scheduled_with_fixed_delay_task_template": ""
+}

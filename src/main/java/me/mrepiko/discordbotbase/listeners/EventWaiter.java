@@ -1,4 +1,4 @@
-package me.mrepiko.discordbotbase.listeners.general;
+package me.mrepiko.discordbotbase.listeners;
 
 import net.dv8tion.jda.api.events.Event;
 import net.dv8tion.jda.api.events.GenericEvent;

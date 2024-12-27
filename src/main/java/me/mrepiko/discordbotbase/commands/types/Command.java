@@ -5,8 +5,9 @@ import com.google.gson.JsonObject;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
-import me.mrepiko.discordbotbase.config.Config;
+import lombok.experimental.Delegate;
 import me.mrepiko.discordbotbase.DiscordBot;
+import me.mrepiko.discordbotbase.config.Config;
 import me.mrepiko.discordbotbase.context.interaction.CommandContext;
 import me.mrepiko.discordbotbase.mics.Constants;
 import net.dv8tion.jda.api.Permission;
@@ -25,21 +26,24 @@ import java.util.List;
 public abstract class Command {
 
     private final String name;
+    @Setter private String discordId;
     private String description;
     private String parentName = "";
     private double cooldown;
-    private Config commandConfig;
+    @Delegate private Config commandConfig;
 
     private final List<String> requiredRoles = new ArrayList<>();
     private final List<String> requiredUsers = new ArrayList<>();
     private final List<String> requiredChannels = new ArrayList<>();
     private final List<Permission> requiredPermissions = new ArrayList<>();
     private final List<Permission> requiredChannelPermissions = new ArrayList<>();
+    private final List<Permission> requiredBotPermissions = new ArrayList<>();
     private final List<String> aliases = new ArrayList<>();
     private final List<Option> optionsList = new ArrayList<>();
     private final List<String> guilds = new ArrayList<>();
 
     private boolean admin;
+    private boolean talk;
     @Setter private boolean enabled = true;
     private boolean global;
     private boolean defer;
@@ -52,6 +56,8 @@ public abstract class Command {
     private final HashMap<String, JsonObject> errorHandlers = new HashMap<>();
 
     private final HashMap<String, Long> cooldowns = new HashMap<>();
+
+    private final JsonObject defaultResponse = DiscordBot.getInstance().getDefaultResponse();
 
     public Command(String name) {
         this(name, false);
@@ -75,18 +81,21 @@ public abstract class Command {
         }
         this.commandConfig = new Config(file.getPath());
         setupProperties();
+        setupDefaultConfigurations();
     }
 
     private void setupProperties() {
-        JsonObject properties = commandConfig.get("properties").getAsJsonObject();
+        JsonObject properties = get("properties").getAsJsonObject();
 
         if (properties.has("required_roles")) for (JsonElement e: properties.get("required_roles").getAsJsonArray()) requiredRoles.add(e.getAsString());
         if (properties.has("required_users")) for (JsonElement e: properties.get("required_users").getAsJsonArray()) requiredUsers.add(e.getAsString());
         if (properties.has("required_channels")) for (JsonElement e: properties.get("required_channels").getAsJsonArray()) requiredChannels.add(e.getAsString());
         if (properties.has("required_permissions")) for (JsonElement e: properties.get("required_permissions").getAsJsonArray()) requiredPermissions.add(Permission.valueOf(e.getAsString()));
         if (properties.has("required_channel_permissions")) for (JsonElement e: properties.get("required_channel_permissions").getAsJsonArray()) requiredChannelPermissions.add(Permission.valueOf(e.getAsString()));
+        if (properties.has("required_bot_permissions")) for (JsonElement e: properties.get("required_bot_permissions").getAsJsonArray()) requiredBotPermissions.add(Permission.valueOf(e.getAsString()));
         if (properties.has("aliases")) for (JsonElement e: properties.get("aliases").getAsJsonArray()) aliases.add(e.getAsString());
         if (properties.has("guilds")) for (JsonElement e: properties.get("guilds").getAsJsonArray()) guilds.add(e.getAsString());
+
         JsonObject globalErrorHandlersObject = DiscordBot.getInstance().getConfig().get("error_handlers").getAsJsonObject();
         JsonObject errorHandlersObject = globalErrorHandlersObject.get("commands").getAsJsonObject();
         JsonObject optionErrorHandlersObject = globalErrorHandlersObject.get("command_options").getAsJsonObject();
@@ -100,6 +109,7 @@ public abstract class Command {
         description = (properties.has("description")) ? properties.get("description").getAsString() : "N/A";
         cooldown = (properties.has("cooldown")) ? properties.get("cooldown").getAsDouble() : 0;
         admin = properties.has("admin") && properties.get("admin").getAsBoolean();
+        talk = properties.has("talk") && properties.get("talk").getAsBoolean();
         enabled = !properties.has("enabled") || properties.get("enabled").getAsBoolean();
         defer = properties.has("ephemeral_defer");
         ephemeralDefer = defer && properties.get("ephemeral_defer").getAsBoolean();
@@ -163,6 +173,18 @@ public abstract class Command {
         }
     }
 
+    public void expectResponseObject(String key) {
+        expect(key, defaultResponse);
+    }
+
+    public void expectOptionTemplate(String key) {
+        expect(key, Constants.getDropdownOptionTemplate());
+    }
+
+    public void expectFieldTemplate(String key) {
+        expect(key, Constants.getEmbedFieldTemplate());
+    }
+
     public void addChild(Command command) {
         if (contains(command)) return;
         children.add(command);
@@ -172,6 +194,8 @@ public abstract class Command {
         for (Command c: children) if (c.getName().equalsIgnoreCase(command.getName())) return true;
         return false;
     }
+
+    public abstract void setupDefaultConfigurations();
 
     public abstract void handle(CommandContext ctx);
 

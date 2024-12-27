@@ -1,0 +1,17 @@
+{
+
+  "properties": {
+    "description": "Reload commands & components.",
+    "admin": true,
+    "guilds": []
+  },
+
+  "response": {
+    "description": "Commands & components have been successfully reloaded.",
+    "color": "{default_color}",
+    "footer_icon_url": "{default_icon_url}",
+    "footer_text": "{default_name}",
+    "timestamp": "{current_timestamp_millis}"
+  }
+
+}

@@ -20,7 +20,8 @@ public class DataSource {
     public void connect(JsonArray databases) {
         for (JsonElement x: databases) {
             JsonObject obj = x.getAsJsonObject();
-            if (obj.get("id").getAsString().isEmpty()) return;
+            String id = obj.get("id").getAsString();
+            if (id.isEmpty()) return;
 
             HikariConfig hikari = new HikariConfig();
             try {
@@ -47,14 +48,12 @@ public class DataSource {
 
             String propertiesString = properties.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue()).collect(Collectors.joining(";"));
 
-            String id = obj.get("id").getAsString();
             dataSources.put(id, new HikariDataSource(hikari));
 
             hikari.addDataSourceProperty("properties", propertiesString);
         }
     }
 
-    @Nullable
     public Connection getConnection() {
         for (HikariDataSource h: dataSources.values()) {
             try {

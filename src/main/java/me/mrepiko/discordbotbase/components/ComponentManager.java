@@ -2,23 +2,22 @@ package me.mrepiko.discordbotbase.components;
 
 import lombok.Getter;
 import me.mrepiko.discordbotbase.DiscordBot;
-import me.mrepiko.discordbotbase.components.general.BasicComponentHandler;
 import me.mrepiko.discordbotbase.components.general.ComponentHandler;
 import me.mrepiko.discordbotbase.components.general.types.ButtonHandler;
 import me.mrepiko.discordbotbase.components.general.types.DropdownHandler;
 import me.mrepiko.discordbotbase.components.general.types.ModalHandler;
-import me.mrepiko.discordbotbase.components.handlers.ShowcaseButtonHandler;
-import me.mrepiko.discordbotbase.components.handlers.ShowcaseDropdownHandler;
-import me.mrepiko.discordbotbase.components.handlers.ShowcaseModalHandler;
+import me.mrepiko.discordbotbase.context.Context;
 import me.mrepiko.discordbotbase.context.interaction.ButtonContext;
 import me.mrepiko.discordbotbase.context.interaction.DropdownContext;
 import me.mrepiko.discordbotbase.context.interaction.ModalContext;
-import me.mrepiko.discordbotbase.mics.PlaceholderMap;
 import me.mrepiko.discordbotbase.mics.ResponseBuilder;
+import me.mrepiko.discordbotbase.mics.placeholders.PlaceholderMap;
+import me.mrepiko.discordbotbase.mics.utils.ComponentUtils;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent;
@@ -40,9 +39,7 @@ public class ComponentManager extends ListenerAdapter {
     private final HashMap<String, HashMap<String, Modal>> modals = new HashMap<>();
 
     public void registerComponentHandlers() {
-        addComponentHandler(new ShowcaseButtonHandler());
-        addComponentHandler(new ShowcaseDropdownHandler());
-        addComponentHandler(new ShowcaseModalHandler());
+
     }
 
     public void reload() {
@@ -54,7 +51,7 @@ public class ComponentManager extends ListenerAdapter {
 
     @Nullable
     public ComponentHandler getComponentHandler(String name) {
-        for (ComponentHandler c: componentHandlers) if (c.getName().equalsIgnoreCase(name)) return c;
+        for (ComponentHandler c : componentHandlers) if (c.getName().equalsIgnoreCase(name)) return c;
         return null;
     }
 
@@ -64,28 +61,30 @@ public class ComponentManager extends ListenerAdapter {
     }
 
     private boolean contains(ComponentHandler componentHandler) {
-        for (ComponentHandler c: componentHandlers) if (c.getName().equalsIgnoreCase(componentHandler.getName())) return true;
+        for (ComponentHandler c : componentHandlers)
+            if (c.getName().equalsIgnoreCase(componentHandler.getName())) return true;
         return false;
     }
 
     public void addRuntimeComponent(RuntimeComponent runtimeComponent) {
         runtimeComponents.add(runtimeComponent);
-        BasicComponentHandler basicComponentHandler = runtimeComponent.getBasicComponentHandler();
-        if (basicComponentHandler.getTimeout() > 0) {
+        if (runtimeComponent.getBasicComponentHandler() == null) return;
+        if (runtimeComponent.getTimeout() > 0) {
             new Timer().schedule(new TimerTask() {
                 @Override
                 public void run() {
                     runtimeComponents.remove(runtimeComponent);
                 }
-            }, basicComponentHandler.getTimeout() * 1000L + 2000L);
+            }, (runtimeComponent.getTimeout() + 2) * 1000L);
         }
     }
 
     @Nullable
     private RuntimeComponent getRuntimeComponent(String name, String messageId) {
-        for (RuntimeComponent r: runtimeComponents) {
-            if (r == null || r.getMessageId() == null) continue;
-            if (r.getBasicComponentHandler().getName().equalsIgnoreCase(name) && r.getMessageId().equalsIgnoreCase(messageId)) return r;
+        for (RuntimeComponent r : runtimeComponents) {
+            if (r == null || r.getMessageId() == null || r.getBasicComponentHandler() == null) continue;
+            if (r.getBasicComponentHandler().getName().equalsIgnoreCase(name) && r.getMessageId().equalsIgnoreCase(messageId))
+                return r;
         }
         return null;
     }
@@ -109,25 +108,39 @@ public class ComponentManager extends ListenerAdapter {
         RuntimeComponent runtimeComponent = getRuntimeComponent(componentName, event.getMessageId());
         ComponentHandler componentHandler = (runtimeComponent == null) ? getComponentHandler(componentName) : runtimeComponent.getBasicComponentHandler();
         if (!(componentHandler instanceof ButtonHandler buttonHandler)) return;
+
+        ComponentHandlerOverrides overrides = ComponentUtils.combineAndGetOverrides(buttonHandler, runtimeComponent);
         ButtonContext ctx = new ButtonContext(event, runtimeComponent);
         PlaceholderMap map = new PlaceholderMap(ctx);
-        if (runtimeComponent != null) runtimeComponent.acceptConsumer(ctx);
+
+        if (runtimeComponent != null) {
+            if (overrides.isInvokerOnly() && !runtimeComponent.getInvokerId().equalsIgnoreCase(event.getUser().getId())) {
+                ResponseBuilder.build(map, componentHandler.getErrorHandlers().get("reserved_for_invoker")).send();
+                return;
+            }
+            runtimeComponent.acceptConsumer(ctx);
+        }
         if (!checkForRequirements(map, componentHandler)) return;
-        if (buttonHandler.getComponentConfig().has("default_response")) ResponseBuilder.build(map, componentHandler.getComponentConfig().get("default_response").getAsJsonObject()).send();
-        else {
-            if (buttonHandler.isDefer()) ctx.getCallback().deferReply(buttonHandler.isEphemeralDefer()).queue();
+
+        if (buttonHandler.getComponentConfig().has("default_response")) {
+            ResponseBuilder.build(map, componentHandler.getComponentConfig().get("default_response").getAsJsonObject()).send();
+        } else {
+            if (overrides.isDefer()) ctx.getCallback().deferReply(overrides.isEphemeralDefer()).queue();
             buttonHandler.handle(ctx);
         }
-        if (!buttonHandler.isDisableOnceUsed() && !buttonHandler.isDisableAllOnceUsed()) return;
+        if (!overrides.isDisableOnceUsed() && !overrides.isDisableAllOnceUsed()) return;
+
         List<List<ActionComponent>> itemComponents = new ArrayList<>();
-        for (LayoutComponent c: event.getMessage().getComponents()) {
+        for (LayoutComponent c : event.getMessage().getComponents()) {
             List<ActionComponent> actionComponents = new ArrayList<>();
-            for (ActionComponent a: c.getActionComponents()) {
-                if (buttonHandler.isDisableAllOnceUsed()) actionComponents.add(a.asDisabled());
-                else actionComponents.add((a.getId() == null || !a.getId().equalsIgnoreCase(buttonHandler.getName())) ? a : a.asDisabled());
+            for (ActionComponent a : c.getActionComponents()) {
+                if (overrides.isDisableAllOnceUsed()) actionComponents.add(a.asDisabled());
+                else
+                    actionComponents.add((a.getId() == null || !a.getId().split("\\.")[0].equalsIgnoreCase(buttonHandler.getName())) ? a : a.asDisabled());
             }
             itemComponents.add(actionComponents);
         }
+
         event.getMessage().editMessageComponents(itemComponents.stream().map(ActionRow::of).toList()).queue();
     }
 
@@ -137,25 +150,40 @@ public class ComponentManager extends ListenerAdapter {
         RuntimeComponent runtimeComponent = getRuntimeComponent(componentName, event.getMessageId());
         ComponentHandler componentHandler = (runtimeComponent == null) ? getComponentHandler(componentName) : runtimeComponent.getBasicComponentHandler();
         if (!(componentHandler instanceof DropdownHandler dropdownHandler)) return;
+
+        ComponentHandlerOverrides overrides = ComponentUtils.combineAndGetOverrides(dropdownHandler, runtimeComponent);
         DropdownContext ctx = new DropdownContext(event, runtimeComponent);
         PlaceholderMap map = new PlaceholderMap(ctx);
-        if (runtimeComponent != null) runtimeComponent.acceptConsumer(ctx);
+
+        if (runtimeComponent != null) {
+            if (overrides.isInvokerOnly() && !runtimeComponent.getInvokerId().equalsIgnoreCase(event.getUser().getId())) {
+                ResponseBuilder.build(map, componentHandler.getErrorHandlers().get("reserved_for_invoker")).send();
+                return;
+            }
+            runtimeComponent.acceptConsumer(ctx);
+        }
         if (!checkForRequirements(map, componentHandler)) return;
-        if (dropdownHandler.getComponentConfig().has("default_response")) ResponseBuilder.build(map, componentHandler.getComponentConfig().get("default_response").getAsJsonObject()).send();
-        else {
-            if (dropdownHandler.isDefer()) ctx.getCallback().deferReply(dropdownHandler.isEphemeralDefer()).queue();
+
+        String value = event.getSelectedOptions().get(0).getValue();
+        if (dropdownHandler.getComponentConfig().has(value + "_default_response")) {
+            ResponseBuilder.build(map, componentHandler.getComponentConfig().get(value + "_default_response").getAsJsonObject()).send();
+        } else {
+            if (overrides.isDefer()) ctx.getCallback().deferReply(overrides.isEphemeralDefer()).queue();
             dropdownHandler.handle(ctx);
         }
-        if (!dropdownHandler.isDisableOnceUsed() && !dropdownHandler.isDisableAllOnceUsed()) return;
+        if (!overrides.isDisableOnceUsed() && !overrides.isDisableAllOnceUsed()) return;
+
         List<List<ActionComponent>> itemComponents = new ArrayList<>();
-        for (LayoutComponent c: event.getMessage().getComponents()) {
+        for (LayoutComponent c : event.getMessage().getComponents()) {
             List<ActionComponent> actionComponents = new ArrayList<>();
-            for (ActionComponent a: c.getActionComponents()) {
-                if (dropdownHandler.isDisableAllOnceUsed()) actionComponents.add(a.asDisabled());
-                else actionComponents.add((a.getId() == null || !a.getId().equalsIgnoreCase(dropdownHandler.getName())) ? a : a.asDisabled());
+            for (ActionComponent a : c.getActionComponents()) {
+                if (overrides.isDisableAllOnceUsed()) actionComponents.add(a.asDisabled());
+                else
+                    actionComponents.add((a.getId() == null || !a.getId().split("\\.")[0].equalsIgnoreCase(dropdownHandler.getName())) ? a : a.asDisabled());
             }
             itemComponents.add(actionComponents);
         }
+
         event.getMessage().editMessageComponents(itemComponents.stream().map(ActionRow::of).toList()).queue();
     }
 
@@ -163,22 +191,29 @@ public class ComponentManager extends ListenerAdapter {
     public void onModalInteraction(@NotNull ModalInteractionEvent event) {
         Modal modal = getModal(event.getModalId(), (event.getMessage() == null) ? "" : event.getMessage().getId());
         ModalHandler modalHandler = (ModalHandler) getComponentHandler(event.getModalId().split("\\.")[0]);
-        if (modalHandler == null) return;
+        if (modalHandler == null || modal == null) return;
+
         ModalContext ctx = new ModalContext(event, modal);
         PlaceholderMap map = new PlaceholderMap(ctx);
+
         if (!checkForRequirements(map, modalHandler)) return;
+
         if (modalHandler.getComponentConfig().has("default_response")) {
             ResponseBuilder.build(map, modalHandler.getComponentConfig().get("default_response").getAsJsonObject()).send();
             return;
         }
         if (modalHandler.isDefer()) ctx.getCallback().deferReply(modalHandler.isEphemeralDefer()).queue();
+
         modalHandler.handle(ctx);
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean checkForRequirements(PlaceholderMap map, ComponentHandler componentHandler) {
         DiscordBot instance = DiscordBot.getInstance();
-        User user = map.getCtx().getUser();
+        Context ctx = map.getCtx();
+        MessageChannel channel = ctx.getChannel();
+        Member member = ctx.getMember();
+        User user = ctx.getUser();
         if (user == null) return false;
 
         if (!componentHandler.isEnabled()) {
@@ -197,9 +232,9 @@ public class ComponentManager extends ListenerAdapter {
                 return false;
             } else componentHandler.getCooldowns().remove(user.getId());
         }
-        if (map.getCtx().getMember() != null && !componentHandler.getRequiredRoles().isEmpty()) {
+        if (member != null && !componentHandler.getRequiredRoles().isEmpty()) {
             boolean hasRole = false;
-            for (Role r: map.getCtx().getMember().getRoles()) {
+            for (Role r : member.getRoles()) {
                 if (componentHandler.getRequiredRoles().contains(r.getId())) {
                     hasRole = true;
                     break;
@@ -214,22 +249,27 @@ public class ComponentManager extends ListenerAdapter {
             ResponseBuilder.build(map, componentHandler.getErrorHandlers().get("reserved_for_user")).send();
             return false;
         }
-        if (map.getCtx().getGuild() != null && map.getCtx().getChannel() != null && !componentHandler.getRequiredChannels().isEmpty() && !componentHandler.getRequiredChannels().contains(map.getCtx().getChannel().getId())) {
+        if (ctx.getGuild() != null && channel != null && !componentHandler.getRequiredChannels().isEmpty() && !componentHandler.getRequiredChannels().contains(channel.getId())) {
             ResponseBuilder.build(map, componentHandler.getErrorHandlers().get("reserved_for_channel")).send();
             return false;
         }
-        Member member = map.getCtx().getMember();
         if (member != null && !componentHandler.getRequiredPermissions().isEmpty() && !member.hasPermission(componentHandler.getRequiredPermissions())) {
             ResponseBuilder.build(map, componentHandler.getErrorHandlers().get("missing_permissions")).send();
             return false;
         }
-        if (member != null && map.getCtx().getChannel() != null && !componentHandler.getRequiredChannelPermissions().isEmpty() && !member.hasPermission((GuildMessageChannel) map.getCtx().getChannel(), componentHandler.getRequiredChannelPermissions())) {
+        if (member != null && channel != null && !componentHandler.getRequiredChannelPermissions().isEmpty() && !member.hasPermission((GuildMessageChannel) channel, componentHandler.getRequiredChannelPermissions())) {
             ResponseBuilder.build(map, componentHandler.getErrorHandlers().get("missing_channel_permissions")).send();
             return false;
         }
+        if (channel != null && componentHandler.isTalk() && !channel.canTalk()) {
+            ResponseBuilder.build(map, componentHandler.getErrorHandlers().get("cannot_talk")).send();
+            return false;
+        }
 
-        if (componentHandler.getCooldown() > 0) componentHandler.getCooldowns().put(user.getId(), System.currentTimeMillis());
+        if (componentHandler.getCooldown() > 0)
+            componentHandler.getCooldowns().put(user.getId(), System.currentTimeMillis());
         return true;
     }
+
 
 }

@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
+import java.util.concurrent.ScheduledFuture;
+
 @RequiredArgsConstructor
 @Getter
 public class Task {
@@ -14,8 +16,8 @@ public class Task {
     private final long period;
 
     private final Runnable runnable;
-
     @Setter private long startedAtTimestamp;
+    @Setter private ScheduledFuture<?> scheduledFuture;
 
     public Task(String id, long delay, long period, Runnable runnable) {
         this(id, Type.SCHEDULED_AT_FIXED_RATE, delay, period, runnable);
